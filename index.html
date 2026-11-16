@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supply Chain Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* Layout-Idee: Lieferpapier/Lagerhalle – Etappen wie Stationen einer Sendung, gelbe Bodenmarkierung als Akzent, Petrol für Bedienelemente */
+:root{
+  --paper:#f3f2ec;
+  --card:#ffffff;
+  --ink:#16212b;
+  --muted:#5a6672;
+  --line:#d9dad3;
+  --petrol:#0d6a70;
+  --petrol-soft:#dcefee;
+  --signal:#f0b400;
+  --signal-soft:#fff3cc;
+  --risk:#c2412d;
+  --risk-soft:#fbe3de;
+  --ok:#2f7d3b;
+  --ok-soft:#e1f1e2;
+  --warn:#b7791f;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Source Sans 3","Segoe UI",Roboto,Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#11181f;--card:#1a232c;--ink:#e8ebe6;--muted:#a3adb6;--line:#2e3a45;
+    --petrol:#4fb7bd;--petrol-soft:#183a3d;--signal:#f5c431;--signal-soft:#3a3014;
+    --risk:#ef7a66;--risk-soft:#3d221d;--ok:#6cc27a;--ok-soft:#1d3322;--warn:#e0a84a;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#11181f;--card:#1a232c;--ink:#e8ebe6;--muted:#a3adb6;--line:#2e3a45;
+  --petrol:#4fb7bd;--petrol-soft:#183a3d;--signal:#f5c431;--signal-soft:#3a3014;
+  --risk:#ef7a66;--risk-soft:#3d221d;--ok:#6cc27a;--ok-soft:#1d3322;--warn:#e0a84a;color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55}
+h1,h2,h3,h4{font-family:var(--display);line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.4rem,6vw,3.6rem);font-weight:700;letter-spacing:.01em}
+h2{font-size:clamp(1.8rem,4vw,2.4rem);font-weight:700}
+h3{font-size:1.4rem;font-weight:600}
+h4{font-size:1.15rem;font-weight:600}
+p{margin:0}
+a{color:var(--petrol)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+.prose{max-width:68ch}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.muted{color:var(--muted)}
+.small{font-size:.9rem}
+
+/* Kopf */
+header.top{position:sticky;top:0;z-index:20;background:var(--ink);color:#f3f2ec}
+:root[data-theme="dark"] header.top{background:#0a0f14}
+header.top .wrap{display:flex;gap:14px;align-items:center;justify-content:space-between;padding-top:8px;padding-bottom:8px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:700;font-size:1.25rem;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.brand span{color:var(--signal)}
+nav.chap{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;max-width:100%}
+nav.chap a{color:#cfd6dc;text-decoration:none;font-family:var(--display);font-size:1rem;padding:4px 8px;border-radius:4px;white-space:nowrap}
+nav.chap a:hover{background:rgba(255,255,255,.1);color:#fff}
+nav.chap a.done{color:var(--signal)}
+.progressbar{height:5px;background:repeating-linear-gradient(45deg,#2b3843 0 10px,#24303a 10px 20px)}
+.progressbar i{display:block;height:100%;width:0;background:var(--signal);transition:width .4s}
+
+.hero{padding:40px 0 28px;border-bottom:1px solid var(--line)}
+.hero .kicker{font-family:var(--display);text-transform:uppercase;letter-spacing:.12em;color:var(--petrol);font-weight:600}
+.hero .lead{font-size:1.18rem;margin-top:12px}
+.tape{display:inline-block;background:var(--signal);color:#16212b;font-family:var(--display);font-weight:700;padding:2px 10px;letter-spacing:.06em;text-transform:uppercase;font-size:.95rem}
+.goal{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:22px}
+.goalcard{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--petrol);padding:12px 14px;border-radius:6px}
+.goalcard.min{border-left-color:var(--signal)}
+
+section.etappe{scroll-margin-top:96px;padding:46px 0;border-bottom:1px solid var(--line)}
+.ethead{display:flex;gap:16px;align-items:flex-start;margin-bottom:18px}
+.etnum{font-family:var(--display);font-weight:700;font-size:2.6rem;line-height:1;color:var(--paper);background:var(--ink);padding:6px 10px;border-radius:4px;min-width:64px;text-align:center}
+.etnum small{display:block;font-size:.7rem;letter-spacing:.14em;color:var(--signal)}
+.ethead .sub{color:var(--muted);margin-top:4px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.merke{background:var(--signal-soft);border-left:6px solid var(--signal);padding:12px 16px;border-radius:4px}
+.merke b:first-child{font-family:var(--display);text-transform:uppercase;letter-spacing:.06em}
+.quelle{font-size:.85rem;color:var(--muted);font-style:italic}
+
+.btn{cursor:pointer;border:2px solid var(--petrol);background:var(--card);color:var(--petrol);padding:7px 14px;border-radius:6px;font-weight:600}
+.btn:hover{background:var(--petrol-soft)}
+.btn.primary{background:var(--petrol);color:var(--card)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn[aria-pressed="true"]{background:var(--petrol);color:var(--card)}
+.btn.sm{padding:4px 10px;font-size:.9rem}
+.chip{display:inline-block;padding:2px 10px;border-radius:99px;font-size:.85rem;font-weight:600;background:var(--petrol-soft);color:var(--petrol)}
+.lvl{font-family:var(--display);font-weight:700;letter-spacing:.03em;color:var(--warn)}
+
+/* Flüsse */
+.flow{overflow-x:auto}
+.flow svg{min-width:720px;width:100%;height:auto;display:block}
+.flowtxt{fill:var(--ink);font-family:var(--body);font-size:13px}
+.flowbox{fill:var(--card);stroke:var(--ink);stroke-width:1.5}
+
+/* Mini-Checks */
+.mc{display:flex;flex-direction:column;gap:8px}
+.mc .q{font-weight:600}
+.mc .opts{display:flex;flex-wrap:wrap;gap:8px}
+.mc .opts button{cursor:pointer;border:1px solid var(--line);background:var(--card);padding:6px 12px;border-radius:6px}
+.mc .opts button.right{background:var(--ok-soft);border-color:var(--ok)}
+.mc .opts button.wrong{background:var(--risk-soft);border-color:var(--risk)}
+.fb{font-size:.95rem;min-height:1.4em}
+
+/* Lieferkette Tiers */
+.tierwrap{overflow-x:auto}
+.tiergrid{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr)) minmax(120px,.9fr) minmax(110px,.8fr);gap:8px 10px;min-width:820px;align-items:stretch}
+.tierhead{font-family:var(--display);font-weight:600;font-size:1rem;text-align:center;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding-bottom:2px;border-bottom:3px solid var(--line)}
+.tcell{display:flex;flex-direction:column;gap:6px;justify-content:center}
+.node{cursor:pointer;border:1.5px solid var(--ink);background:var(--card);border-radius:5px;padding:6px 8px;font-size:.88rem;text-align:left;line-height:1.25;transition:background .3s,border-color .3s,opacity .3s}
+.node:hover{background:var(--petrol-soft)}
+.node.hidden{opacity:.12;pointer-events:none}
+.node.fail{background:var(--risk);color:#fff;border-color:var(--risk)}
+.node.hit{background:var(--risk-soft);border-color:var(--risk)}
+.node.late{background:var(--signal-soft);border-color:var(--warn)}
+.node.static{cursor:default}
+.span-all{grid-row:2 / span 6;display:flex;align-items:center}
+.span-all .node{width:100%;min-height:90px;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:600}
+.contract{border:2px dashed var(--signal)!important}
+.counter{font-family:var(--display);font-size:2rem;font-weight:700;color:var(--petrol);font-variant-numeric:tabular-nums}
+
+/* Funktionen */
+.fcard{background:var(--card);border:1px solid var(--line);border-top:6px solid var(--petrol);border-radius:6px;padding:14px}
+.fcard.sup{border-top-color:var(--muted)}
+.fcard ul{margin:6px 0 0;padding-left:18px}
+.sixr{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.sixr div{background:var(--ink);color:var(--paper);border-radius:4px;padding:8px;text-align:center;font-family:var(--display);font-size:1.05rem}
+.sixr div b{display:block;color:var(--signal);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase}
+
+/* Sortierspiel */
+.pool{display:flex;flex-wrap:wrap;gap:8px;min-height:44px;padding:10px;border:2px dashed var(--line);border-radius:6px}
+.tcard{cursor:pointer;background:var(--card);border:1.5px solid var(--ink);border-radius:5px;padding:6px 10px;font-size:.92rem}
+.tcard.sel{background:var(--signal);color:#16212b;border-color:var(--signal)}
+.tcard.right{background:var(--ok-soft);border-color:var(--ok);cursor:default}
+.tcard.wrong{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.bins{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:10px}
+.bin{cursor:pointer;background:var(--paper);border:2px solid var(--petrol);border-radius:6px;padding:8px;min-height:90px;display:flex;flex-direction:column;gap:6px}
+.bin h4{color:var(--petrol)}
+.bin.sup{border-color:var(--muted)}
+.bin.sup h4{color:var(--muted)}
+
+/* Unternehmen */
+.firm{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.dept{cursor:pointer;background:var(--card);border:1.5px solid var(--ink);border-radius:6px;padding:10px;text-align:left;font-weight:600;position:relative}
+.dept small{display:block;font-weight:400;color:var(--muted);font-size:.8rem}
+.dept.seen::after{content:"✓";position:absolute;right:8px;top:6px;color:var(--ok);font-weight:700}
+.dept[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.dept[aria-pressed="true"] small{color:#c8ced3}
+.deptinfo{min-height:170px}
+.tag{display:inline-block;font-size:.8rem;font-weight:700;padding:2px 8px;border-radius:3px;margin:2px 4px 2px 0;background:var(--signal-soft);color:var(--ink);border:1px solid var(--signal)}
+.band{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;overflow-x:auto}
+.band div{background:var(--petrol);color:#fff;padding:8px;font-size:.88rem;min-width:120px;clip-path:polygon(0 0,92% 0,100% 50%,92% 100%,0 100%,8% 50%)}
+.band div:first-child{clip-path:polygon(0 0,92% 0,100% 50%,92% 100%,0 100%)}
+.band div b{display:block;font-family:var(--display);font-size:1rem}
+.band div.rev{background:var(--muted)}
+
+/* Fälle */
+.case{background:var(--card);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.case summary{cursor:pointer;padding:12px 14px;font-weight:700;list-style:none;display:flex;gap:10px;align-items:center}
+.case summary::-webkit-details-marker{display:none}
+.case summary .yr{font-family:var(--display);background:var(--ink);color:var(--signal);padding:1px 8px;border-radius:3px}
+.case[open] summary{border-bottom:1px solid var(--line)}
+.case .in{padding:12px 14px;display:grid;gap:8px}
+.case .in div b{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;color:var(--petrol);font-size:.95rem}
+
+/* Bullwhip */
+.chartbox{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto}
+.chartbox svg{width:100%;min-width:560px;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.88rem}
+.legend span::before{content:"";display:inline-block;width:18px;height:4px;margin-right:6px;vertical-align:middle;background:var(--c)}
+.ampl{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.ampl div{background:var(--paper);border-radius:6px;padding:8px}
+.ampl b{font-family:var(--display);font-size:1.5rem;font-variant-numeric:tabular-nums}
+input[type=range]{accent-color:var(--petrol);width:220px;max-width:100%}
+
+/* Risiko */
+.cycle{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;counter-reset:st}
+.cycle div{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px;position:relative}
+.cycle div::before{counter-increment:st;content:"Schritt " counter(st);font-family:var(--display);color:var(--petrol);font-weight:700;display:block}
+.risktable{width:100%;border-collapse:collapse;font-size:.95rem}
+.risktable th,.risktable td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+.risktable th{font-family:var(--display);font-size:1rem;color:var(--muted)}
+.risktable select{font:inherit;padding:3px;border-radius:4px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.tablewrap{overflow-x:auto}
+.heat{display:grid;grid-template-columns:34px repeat(5,1fr);grid-template-rows:repeat(5,52px) 30px;gap:3px;max-width:430px}
+.heat .cell{border-radius:3px;position:relative;display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:2px}
+.heat .ax{font-size:.78rem;color:var(--muted);display:flex;align-items:center;justify-content:center;text-align:center}
+.dot{width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--paper);font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--card)}
+.lv-g{background:#cfe3d1}.lv-m{background:#f6e7a8}.lv-e{background:#f3b98a}.lv-h{background:#e88b7a}
+:root[data-theme="dark"] .lv-g{background:#2c4a31}:root[data-theme="dark"] .lv-m{background:#5a4f22}:root[data-theme="dark"] .lv-e{background:#6b4225}:root[data-theme="dark"] .lv-h{background:#73302a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .lv-g{background:#2c4a31}:root:not([data-theme="light"]) .lv-m{background:#5a4f22}:root:not([data-theme="light"]) .lv-e{background:#6b4225}:root:not([data-theme="light"]) .lv-h{background:#73302a}}
+.pill{display:inline-block;padding:1px 9px;border-radius:99px;font-size:.82rem;font-weight:700;white-space:nowrap}
+.pill.g{background:var(--ok-soft);color:var(--ok)}.pill.m{background:var(--signal-soft);color:var(--warn)}.pill.e{background:#f7d8c2;color:#9a4a12}.pill.h{background:var(--risk-soft);color:var(--risk)}
+:root[data-theme="dark"] .pill.e{background:#4a2e1a;color:#f0a86b}
+.vuln{display:grid;grid-template-columns:1fr auto;gap:8px 14px;align-items:center;max-width:560px}
+.vuln output{font-family:var(--display);font-size:1.3rem;font-variant-numeric:tabular-nums;min-width:1.5em;text-align:right}
+
+/* Incoterms */
+.incobtns{display:flex;flex-wrap:wrap;gap:6px}
+.incobtns button{cursor:pointer;font-family:var(--display);font-size:1.1rem;font-weight:700;letter-spacing:.04em;border:2px solid var(--ink);background:var(--card);border-radius:4px;padding:3px 10px}
+.incobtns button[aria-pressed="true"]{background:var(--ink);color:var(--signal)}
+.incobtns .grp{font-size:.8rem;color:var(--muted);width:100%;margin-top:4px}
+.route{display:grid;grid-template-columns:repeat(7,minmax(100px,1fr));gap:0;min-width:760px;margin-top:4px;padding-top:34px}
+.stn{padding:8px 6px 10px;border-top:8px solid var(--line);font-size:.85rem;text-align:center;position:relative}
+.stn.s{border-top-color:var(--petrol)}
+.stn.b{border-top-color:var(--signal)}
+.stn b{display:block;font-family:var(--display);font-size:1rem}
+.stn .flag{display:none;position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:var(--risk);color:#fff;font-size:.72rem;font-weight:700;padding:2px 6px;border-radius:3px;white-space:nowrap}
+.stn.riskpt .flag{display:block}
+.stn.riskpt{box-shadow:inset 3px 0 0 var(--risk)}
+
+/* Studium */
+.video{display:grid;grid-template-columns:minmax(220px,320px) 1fr;gap:18px;align-items:start}
+@media (max-width:640px){.video{grid-template-columns:1fr}}
+.vthumb{display:flex;flex-direction:column;justify-content:space-between;aspect-ratio:16/9;background:linear-gradient(135deg,var(--ink),#24435a);color:#fff;border-radius:8px;padding:14px;text-decoration:none}
+.vthumb .play{width:54px;height:38px;border-radius:10px;background:#e33;display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.vthumb b{font-family:var(--display);font-size:1.3rem;line-height:1.1}
+.chapters{list-style:none;padding:0;margin:0;display:grid;gap:4px}
+.chapters li{display:flex;gap:10px}
+.chapters a{font-family:var(--display);font-weight:600;min-width:44px;font-variant-numeric:tabular-nums}
+.sem{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.sem .card h4{color:var(--petrol)}
+.sem ul{margin:6px 0 0;padding-left:18px;font-size:.95rem}
+.skill{display:grid;grid-template-columns:minmax(160px,1fr) 2fr auto;gap:8px 12px;align-items:center}
+.skill output{font-variant-numeric:tabular-nums;font-weight:700}
+textarea{width:100%;min-height:90px;font:inherit;padding:8px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);resize:vertical}
+details.help{background:var(--paper);border:1px dashed var(--muted);border-radius:6px;padding:6px 12px;margin-top:6px}
+details.help summary{cursor:pointer;font-weight:600;color:var(--petrol)}
+details.sol summary{color:var(--ok)}
+.task{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px}
+.task h4 .lvl{margin-right:6px}
+
+/* Quiz */
+.quiz .qq{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px}
+.score{font-family:var(--display);font-size:1.6rem;font-weight:700}
+footer{padding:30px 0 60px;font-size:.92rem;color:var(--muted)}
+footer ul{padding-left:18px}
+.donebtn{margin-top:18px}
+
+/* Gruppenarbeit (Lehrkraft) */
+#e0{background:var(--card)}
+#e0 .etnum{background:var(--signal);color:#16212b}
+#e0 .etnum small{color:#16212b}
+.privacy{border-left:6px solid var(--petrol);background:var(--petrol-soft);padding:10px 14px;border-radius:4px;font-size:.95rem}
+.upload{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.drop{border:2px dashed var(--petrol);border-radius:8px;padding:18px;text-align:center;background:var(--paper);cursor:pointer}
+.drop.over{background:var(--petrol-soft)}
+.drop input{display:block;margin:10px auto 0;max-width:100%}
+.form{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center}
+.form select,.form input[type=number]{font:inherit;padding:4px 6px;border-radius:4px;border:1px solid var(--line);background:var(--card);color:var(--ink);max-width:100%}
+.namelist{display:flex;flex-wrap:wrap;gap:6px;max-height:220px;overflow:auto;padding:4px}
+.namelist label{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:99px;padding:3px 10px 3px 6px;font-size:.92rem;background:var(--paper);cursor:pointer}
+.namelist label.absent{opacity:.45;text-decoration:line-through}
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.gcard{border:2px solid var(--ink);border-radius:8px;background:var(--paper);overflow:hidden;break-inside:avoid}
+.gcard h4{background:var(--ink);color:var(--signal);padding:6px 10px;display:flex;justify-content:space-between;gap:8px}
+.gcard h4 span{color:#cfd6dc;font-family:var(--body);font-size:.8rem;font-weight:400;align-self:center}
+.gcard .topic{padding:6px 10px;font-size:.88rem;border-bottom:1px solid var(--line);background:var(--signal-soft)}
+.gcard ol{margin:0;padding:8px 10px 10px 30px}
+.gcard li{padding:1px 0}
+.gcard li small{color:var(--muted)}
+.saved{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.saved li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:6px 10px;background:var(--paper)}
+.saved li b{flex:1;min-width:160px}
+.btn.warn{border-color:var(--risk);color:var(--risk)}
+.status{font-size:.92rem;min-height:1.3em}
+#printArea{display:none}
+@media print{
+  body{background:#fff;color:#000}
+  body > *{display:none!important}
+  #printArea{display:block!important;font-family:var(--body);color:#000}
+  #printArea h1{font-size:20pt;margin:0 0 4px}
+  #printArea .pmeta{font-size:10pt;margin-bottom:10px}
+  #printArea .groups{grid-template-columns:repeat(3,1fr)}
+  #printArea .gcard{border:1.5px solid #000;background:#fff}
+  #printArea .gcard h4{background:#fff;color:#000;border-bottom:1.5px solid #000}
+  #printArea .gcard h4 span{color:#000}
+  #printArea .gcard .topic{background:#fff}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">Supply <span>Chain</span> Management</div>
+    <nav class="chap" aria-label="Etappen">
+      <a href="#e0">00 Gruppen</a><a href="#e1">01 Begriff</a><a href="#e2">02 Kette</a><a href="#e3">03 Aufgaben</a><a href="#e4">04 Überall</a><a href="#e5">05 Komplexität</a><a href="#e6">06 Risiko</a><a href="#e7">07 Incoterms</a><a href="#e8">08 Studium</a><a href="#e9">09 Aufgaben</a>
+    </nav>
+  </div>
+  <div class="progressbar" aria-hidden="true"><i id="pbar"></i></div>
+</header>
+
+<main>
+<div class="hero">
+  <div class="wrap stack">
+    <div class="kicker">Wirtschaftsinformatik 10 · Unternehmen als vernetztes System · Logistik</div>
+    <h1>Supply Chain Management: Wer steuert die Lieferkette?</h1>
+    <p class="lead prose">Ein Paket kommt pünktlich an, ein Auto rollt vom Band, eine Schule wird eröffnet. Dahinter stehen Dutzende bis Hunderte Unternehmen, die zusammenspielen müssen. Supply Chain Management (SCM) sorgt dafür, dass das klappt. Auf dieser Seite erfährst du, welche Aufgaben dazugehören, warum Lieferketten so verletzlich sind und wie ein Studium in diesem Bereich aussieht.</p>
+    <div class="goal">
+      <div class="goalcard min"><span class="tape">Mindestziel ⭐</span><p style="margin-top:6px">Du kannst SCM erklären, die drei Kernfunktionen nennen und zeigen, in welchen Abteilungen Logistik mitarbeitet.</p></div>
+      <div class="goalcard"><b>So arbeitest du</b><p>Arbeite die Etappen der Reihe nach durch. Jede Etappe hakst du unten ab. Dein Fortschritt und deine Notizen bleiben nur in diesem Browser.</p></div>
+      <div class="goalcard"><b>Niveaus</b><p><span class="lvl">⭐</span> Basis · <span class="lvl">⭐⭐</span> Standard · <span class="lvl">⭐⭐⭐</span> Experte. Hilfekarten öffnest du bei Bedarf.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ETAPPE 0: Gruppenarbeit -->
+<section class="etappe" id="e0">
+ <div class="wrap stack">
+  <div class="ethead"><div class="etnum"><small>START</small>00</div><div><h2>Gruppenarbeit organisieren</h2><p class="sub">Für die Lehrkraft: Klassenliste laden, Gruppen automatisch bilden, speichern und drucken</p></div></div>
+  <p class="privacy"><b>Datenschutz:</b> Die Klassenliste wird nur in diesem Browser gelesen und gespeichert. Sie wird nicht hochgeladen oder an einen Server geschickt. Am Ende der Stunde kannst du alle Namen mit einem Klick löschen.</p>
+
+  <div class="upload">
+   <div class="card stack">
+    <h3>1 · Klassenliste laden</h3>
+    <label class="drop" id="drop" for="csvFile">
+     <b>CSV-Datei hierher ziehen</b> oder auswählen<br>
+     <span class="small muted">z. B. aus Excel „Speichern unter → CSV (Trennzeichen-getrennt)“ oder aus der Schulverwaltung. Erkannt werden Semikolon, Komma und Tabulator sowie Spalten wie „Nachname“ und „Vorname“.</span>
+     <input type="file" id="csvFile" accept=".csv,.txt,text/csv,text/plain">
+    </label>
+    <details class="help"><summary>Oder Namen einfügen</summary>
+     <label for="namePaste" class="small muted">Ein Name pro Zeile (z. B. aus Excel kopiert):</label>
+     <textarea id="namePaste" placeholder="Nachname;Vorname&#10;oder: Vorname Nachname"></textarea>
+     <button class="btn sm" id="pasteBtn">Namen übernehmen</button>
+    </details>
+    <div class="form" id="colForm" hidden>
+     <label for="colMode">Spalten</label>
+     <select id="colMode">
+      <option value="nv">1. Spalte Nachname, 2. Spalte Vorname</option>
+      <option value="vn">1. Spalte Vorname, 2. Spalte Nachname</option>
+      <option value="one">Nur 1. Spalte (ganzer Name)</option>
+     </select>
+    </div>
+    <p class="status" id="loadStatus" aria-live="polite"></p>
+    <button class="btn sm" id="tplBtn">Leere CSV-Vorlage herunterladen</button>
+   </div>
+
+   <div class="card stack">
+    <h3>2 · Gruppen einstellen</h3>
+    <div class="form">
+     <label for="gMode">Einteilung</label>
+     <select id="gMode"><option value="size">nach Gruppengröße</option><option value="count">nach Anzahl der Gruppen</option></select>
+     <label for="gNum" id="gNumLabel">Personen je Gruppe</label>
+     <input type="number" id="gNum" min="2" max="13" value="4">
+     <label for="gTopics">Themen</label>
+     <select id="gTopics">
+      <option value="puzzle">Gruppenpuzzle: Expertenthema je Gruppe</option>
+      <option value="none">ohne Themen</option>
+     </select>
+     <label for="gRoles">Rollen</label>
+     <select id="gRoles"><option value="yes">Rollen verteilen</option><option value="no">ohne Rollen</option></select>
+     <label for="gFormat">Anzeige</label>
+     <select id="gFormat"><option value="full">Vorname Nachname</option><option value="init">Vorname N.</option><option value="first">nur Vorname</option></select>
+    </div>
+    <p class="small muted">Die Gruppen werden zufällig und möglichst gleich groß gebildet (Unterschied höchstens eine Person).</p>
+    <div class="row"><button class="btn primary" id="makeGroups">Gruppen bilden</button><button class="btn" id="reshuffle" hidden>Neu mischen</button></div>
+   </div>
+  </div>
+
+  <div class="card stack" id="classBox" hidden>
+   <div class="row"><h3 style="flex:1">Anwesenheit</h3><span class="chip" id="presentCount"></span></div>
+   <p class="small muted">Tippe auf einen Namen, um ihn für heute als abwesend zu markieren. Abwesende werden nicht eingeteilt.</p>
+   <div class="namelist" id="nameList"></div>
+  </div>
+
+  <div class="card stack" id="groupBox" hidden>
+   <div class="row"><h3 style="flex:1">3 · Gruppen</h3><span class="chip" id="groupMeta"></span></div>
+   <div class="groups" id="groupOut"></div>
+   <div class="row">
+    <label for="saveName" class="small muted">Name zum Speichern:</label>
+    <input type="text" id="saveName" style="font:inherit;padding:4px 8px;border-radius:4px;border:1px solid var(--line);background:var(--card);color:var(--ink);min-width:220px">
+    <button class="btn sm" id="saveGroups">Einteilung speichern</button>
+   </div>
+   <div class="row">
+    <button class="btn sm" id="printGroups">Drucken</button>
+    <button class="btn sm" id="dlPrint">Druckversion herunterladen (HTML)</button>
+    <button class="btn sm" id="dlCsv">Als CSV herunterladen</button>
+    <button class="btn sm" id="copyGroups">Für Teams kopieren</button>
+   </div>
+   <p class="status" id="groupStatus" aria-live="polite"></p>
+   <p class="small muted">Tipp: Drucken klappt direkt, wenn du die Seite als Datei aus deinem Ordner im Browser öffnest. In der Online-Ansicht lädst du die Druckversion herunter und druckst sie von dort.</p>
+  </div>
+
+  <div class="card stack" id="savedBox" hidden>
+   <h3>Gespeicherte Einteilungen</h3>
+   <ul class="saved" id="savedList"></ul>
+  </div>
+
+  <div class="row"><button class="btn sm warn" id="wipeClass">Klassenliste und alle Einteilungen löschen</button></div>
+ </div>
+</section>
+
+<!-- ETAPPE 1 -->
+<section class="etappe" id="e1">
+ <div class="wrap stack">
+  <div class="ethead"><div class="etnum"><small>ETAPPE</small>01</div><div><h2>Was ist Supply Chain Management?</h2><p class="sub">Vom Rohstoff bis zur Kundin – und wieder zurück</p></div></div>
+  <div class="grid2">
+   <div class="stack prose">
+    <p><b>Supply Chain</b> heißt Lieferkette. Gemeint sind alle Unternehmen und Tätigkeiten, die daran beteiligt sind, ein Produkt oder eine Dienstleistung zur Endkundin zu bringen: Lieferanten, Hersteller, Logistikdienstleister, Händler, aber auch Behörden wie der Zoll.</p>
+    <p><b>Supply Chain Management</b> koordiniert all diese Tätigkeiten: Es beginnt beim Rohstoff und endet bei der Auslieferung an den Endkunden. Am Ende der Nutzungsdauer kümmert sich SCM auch um Recycling, Wiederaufbereitung oder Entsorgung des Produkts.</p>
+    <p>Dabei geht es nicht nur um das fertige Produkt, sondern auch darum, <i>wie</i> es hergestellt wurde und <i>wie</i> es zum Kunden gelangt.</p>
+    <p class="quelle">nach: Weltbank (2023), Supply Chain Management, S. iv und 2–3</p>
+   </div>
+   <div class="merke stack">
+    <p><b>Merke:</b> In jeder Lieferkette laufen drei Flüsse gleichzeitig.</p>
+    <p><b style="font-family:var(--display)">Warenfluss</b> – Produkte und Dienstleistungen entstehen und bewegen sich zum Kunden.</p>
+    <p><b style="font-family:var(--display)">Informationsfluss</b> – Bestellungen, Bestände, Termine, Sendungsstatus werden zwischen den Unternehmen ausgetauscht.</p>
+    <p><b style="font-family:var(--display)">Finanzfluss</b> – Rechnungen werden gestellt und Zahlungen geleistet.</p>
+   </div>
+  </div>
+  <div class="card flow" role="img" aria-label="Schema einer Lieferkette: Rohstofflieferant, Zulieferer, Hersteller, Händler, Kunde. Waren fließen nach rechts, Geld nach links, Informationen in beide Richtungen, Rückfluss für Recycling.">
+   <svg viewBox="0 0 900 250" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+     <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+    </defs>
+    <g>
+     <rect class="flowbox" x="10" y="95" width="140" height="56" rx="6"/><text class="flowtxt" x="80" y="119" text-anchor="middle" font-weight="700">Rohstoff-</text><text class="flowtxt" x="80" y="137" text-anchor="middle" font-weight="700">lieferant</text>
+     <rect class="flowbox" x="195" y="95" width="140" height="56" rx="6"/><text class="flowtxt" x="265" y="128" text-anchor="middle" font-weight="700">Zulieferer</text>
+     <rect class="flowbox" x="380" y="95" width="140" height="56" rx="6"/><text class="flowtxt" x="450" y="128" text-anchor="middle" font-weight="700">Hersteller</text>
+     <rect class="flowbox" x="565" y="95" width="140" height="56" rx="6"/><text class="flowtxt" x="635" y="119" text-anchor="middle" font-weight="700">Händler /</text><text class="flowtxt" x="635" y="137" text-anchor="middle" font-weight="700">Logistiker</text>
+     <rect class="flowbox" x="750" y="95" width="140" height="56" rx="6"/><text class="flowtxt" x="820" y="128" text-anchor="middle" font-weight="700">Endkunde</text>
+    </g>
+    <g style="color:var(--petrol)" stroke="currentColor" stroke-width="4" fill="none">
+     <line x1="20" y1="70" x2="878" y2="70" marker-end="url(#ah)"/>
+    </g>
+    <text x="20" y="60" class="flowtxt" style="fill:var(--petrol)" font-weight="700">Warenfluss →</text>
+    <g style="color:var(--signal)" stroke="currentColor" stroke-width="4" fill="none" stroke-dasharray="10 6">
+     <line x1="30" y1="35" x2="870" y2="35" marker-end="url(#ah)" marker-start="url(#ah)"/>
+    </g>
+    <text x="20" y="22" class="flowtxt" font-weight="700">↔ Informationsfluss (Bestellungen, Bestände, Sendungsstatus)</text>
+    <g style="color:var(--ok)" stroke="currentColor" stroke-width="4" fill="none">
+     <line x1="878" y1="178" x2="22" y2="178" marker-end="url(#ah)"/>
+    </g>
+    <text x="878" y="198" class="flowtxt" text-anchor="end" style="fill:var(--ok)" font-weight="700">← Finanzfluss (Zahlungen)</text>
+    <g style="color:var(--muted)" stroke="currentColor" stroke-width="2.5" fill="none" stroke-dasharray="4 5">
+     <path d="M820,152 C820,240 120,240 80,156" marker-end="url(#ah)"/>
+    </g>
+    <text x="450" y="236" class="flowtxt" text-anchor="middle" style="fill:var(--muted)">Rückfluss: Retouren, Recycling, Wiederaufbereitung, Entsorgung</text>
+   </svg>
+  </div>
+  <div class="card mc" data-mc>
+   <p class="q">Mini-Check: Du bestellst Turnschuhe online. Die Versandbestätigung mit Sendungsnummer kommt per E-Mail. Welcher Fluss ist das?</p>
+   <div class="opts"><button data-a="0">Warenfluss</button><button data-a="1">Informationsfluss</button><button data-a="0">Finanzfluss</button></div>
+   <p class="fb" aria-live="polite" data-right="Richtig. Die Sendungsnummer ist eine Information über den Warenfluss – die Schuhe selbst sind noch unterwegs." data-wrong="Nicht ganz. Es bewegt sich noch keine Ware und kein Geld – es geht um eine Nachricht über den Status."></p>
+  </div>
+  <div class="card mc" data-mc>
+   <p class="q">Mini-Check: Wo endet die Verantwortung des Supply Chain Managements?</p>
+   <div class="opts"><button data-a="0">Wenn die Ware beim Kunden ist</button><button data-a="0">Wenn die Rechnung bezahlt ist</button><button data-a="1">Erst nach Recycling, Wiederaufbereitung oder Entsorgung</button></div>
+   <p class="fb" aria-live="polite" data-right="Genau. Die Weltbank zählt auch das Ende der Nutzungsdauer zur Lieferkette." data-wrong="Denk an das Ende der Nutzungsdauer eines Produkts: Wer kümmert sich um das Altgerät?"></p>
+  </div>
+  <div><button class="btn donebtn" data-done="e1">Etappe 01 abgeschlossen</button></div>
+ </div>
+</section>
+
+<!-- ETAPPE 2 -->
+<section class="etappe" id="e2">
+ <div class="wrap stack">
+  <div class="ethead"><div class="etnum"><small>ETAPPE</small>02</div><div><h2>Wie lang ist eine Lieferkette?</h2><p class="sub">Lieferstufen (Tiers) am Beispiel eines Schulneubaus</p></div></div>
+  <div class="prose stack">
+   <p>Ein Landkreis lässt eine neue Schule bauen. Er schließt einen Vertrag nur mit <b>einem</b> Generalunternehmer ab – dem <b>Lieferanten der 1. Stufe</b> (Tier 1). Der beauftragt Subunternehmer (Tier 2), die wiederum bei Händlern (Tier 3) einkaufen, die ihre Ware von Herstellern und Rohstofflieferanten (Tier 4) beziehen. Mit jeder Stufe wächst die Zahl der Beteiligten.</p>
+   <p><b>Aufgabe:</b> Blende die Stufen nacheinander ein. Klicke danach auf ein Unternehmen der Stufe 2, 3 oder 4 und lass es ausfallen.</p>
+  </div>
+  <div class="row">
+   <span class="muted">Sichtbar bis Stufe:</span>
+   <button class="btn sm" data-tier="1">Stufe 1</button><button class="btn sm" data-tier="2">Stufe 2</button><button class="btn sm" data-tier="3">Stufe 3</button><button class="btn sm" data-tier="4" aria-pressed="true">Stufe 4</button>
+   <button class="btn sm" id="tierReset">Ausfälle zurücksetzen</button>
+   <span style="margin-left:auto" class="row"><span class="counter" id="orgCount">0</span><span class="muted small">beteiligte<br>Organisationen</span></span>
+  </div>
+  <div class="card tierwrap">
+   <div class="tiergrid" id="tiergrid"></div>
+  </div>
+  <div class="card" id="rippleMsg" aria-live="polite"><p class="muted">Noch kein Ausfall. Der gestrichelte gelbe Rahmen zeigt: Der Landkreis hat nur mit dem Generalunternehmer einen Vertrag – ist aber von allen anderen abhängig.</p></div>
+  <div class="grid2">
+   <div class="merke stack">
+    <p><b>Merke:</b> Eine Lieferkette ist nur so stark wie ihr schwächstes Glied.</p>
+    <p>Fällt ein Unternehmen weit vorne in der Kette aus, pflanzt sich die Störung bis zum Kunden fort (<b>Ripple-Effekt</b>, Welleneffekt). Je mehr Stufen eine Kette hat, desto schwerer lässt sie sich überblicken und desto anfälliger ist sie.</p>
+   </div>
+   <div class="card stack">
+    <h4>Zahlen, die staunen lassen</h4>
+    <p>Ein durchschnittlicher Pkw besteht zu bis zu <b>85 %</b> aus zugekauften Bauteilen. Tausende Teile kommen von Hunderten Lieferanten. Fehlt ein einziges Teil, kann das Auto nicht ausgeliefert werden.</p>
+    <p>Auch ein scheinbar einfacher Holzlieferant hängt von einer eigenen Kette ab: Wald/Plantage → Holzplatz → Sägewerk → Holzverarbeitung → Holzhändler – und dazwischen jeweils Transportunternehmen.</p>
+    <p class="quelle">nach: Weltbank (2023), S. 3–5 und Anhang II</p>
+   </div>
+  </div>
+  <div class="card stack">
+   <h4>Warum sind Lieferketten so lang geworden?</h4>
+   <p class="prose">Unternehmen konzentrieren sich immer stärker auf das, was sie am besten können (Kernkompetenz), und lagern alles andere an Spezialisten aus (<b>Outsourcing</b>). Die Zulieferer machen es genauso. Die Globalisierung erleichtert es, weltweit einzukaufen. Ergebnis: Jedes Unternehmen trägt nur einen kleinen, aber wichtigen Teil bei – und alle hängen voneinander ab.</p>
+  </div>
+  <div><button class="btn donebtn" data-done="e2">Etappe 02 abgeschlossen</button></div>
+ </div>
+</section>
+
+<!-- ETAPPE 3 -->
+<section class="etappe" id="e3">
+ <div class="wrap stack">
+  <div class="ethead"><div class="etnum"><small>ETAPPE</small>03</div><div><h2>Die Aufgaben im Supply Chain Management</h2><p class="sub">Drei Kernfunktionen, drei Unterstützungsfunktionen</p></div></div>
+  <p class="prose">Laut Weltbank besteht SCM aus <b>drei Kernfunktionen</b>, die eng zusammenarbeiten müssen. Ohne <b>Unterstützungsfunktionen</b> könnten sie sich aber nicht abstimmen.</p>
+  <div class="grid3">
+   <div class="fcard"><h3>Beschaffung</h3><p class="small muted">engl. Procurement</p><p><b>Ziel:</b> Das richtige Produkt in der richtigen Menge und Qualität, am richtigen Ort, zur richtigen Zeit, zum richtigen Preis.</p><ul><li>Bedarf in Anforderungen an Lieferanten übersetzen</li><li>Einkaufsstrategien entwickeln</li><li>Lieferanten bewerten und betreuen</li><li>Verhandeln</li></ul></div>
+   <div class="fcard"><h3>Produktion</h3><p class="small muted">engl. Operations</p><p><b>Ziel:</b> Aus Inputs (Material, Wissen) Outputs (Produkte, Leistungen) machen.</p><ul><li>Maschinen, Personal und Wissen bereitstellen</li><li>Prozesse analysieren</li><li>Qualität sichern</li><li>Nachfrage prognostizieren und steuern</li></ul></div>
+   <div class="fcard"><h3>Logistik</h3><p class="small muted">engl. Logistics</p><p><b>Ziel:</b> Effizienter und wirksamer Fluss der Güter vom Ursprung zum Ziel.</p><ul><li>Transportmittel auswählen</li><li>Übergaben zwischen Dienstleistern koordinieren</li><li>Versandpapiere und Zoll prüfen</li><li>Lager, Distribution, Kühlkette, letzte Meile</li></ul></div>
+  </div>
+  <div class="grid3">
+   <div class="fcard sup"><h4>IT</h4><p>Macht Informationen sofort für alle sichtbar. Beispiel: Sobald eine Bestellung angelegt ist, sehen Produktionsplanung, Lager und Buchhaltung, dass Ware und Rechnung kommen.</p></div>
+   <div class="fcard sup"><h4>Personal</h4><p>Findet und hält Fachkräfte. IT unterstützt, ersetzt aber keine Menschen, die Beziehungen aufbauen und schwierige Entscheidungen abwägen.</p></div>
+   <div class="fcard sup"><h4>Recht</h4><p>Formuliert Verträge mit Lieferanten und hilft bei Streitfällen, z. B. wer für eine beschädigte Lieferung haftet.</p></div>
+  </div>
+  <div class="card stack">
+   <h4>Die „R“ der Beschaffung – kennst du schon als „6 R der Logistik“</h4>
+   <div class="sixr"><div><b>richtiges</b>Produkt</div><div><b>richtige</b>Menge</div><div><b>richtige</b>Qualität</div><div><b>richtiger</b>Ort</div><div><b>richtige</b>Zeit</div><div><b>richtiger</b>Preis</div></div>
+   <p class="small muted">Wird auch nur ein „R“ verfehlt, kann beim Kunden die Produktion stillstehen.</p>
+  </div>
+
+  <div class="card stack" id="sortgame">
+   <h3><span class="lvl">⭐</span>Sortierübung: Wer erledigt was?</h3>
+   <p>Tippe zuerst auf eine Aufgabenkarte, dann auf die passende Funktion. Richtige Karten bleiben dort liegen.</p>
+   <div class="pool" id="pool" aria-label="Aufgabenkarten"></div>
+   <div class="bins" id="bins"></div>
+   <div class="row"><span id="sortScore" class="chip">0 von 0 richtig</span><button class="btn sm" id="sortReset">Neu starten</button></div>
+   <p class="fb" id="sortFb" aria-live="polite"></p>
+  </div>
+  <div><button class="btn donebtn" data-done="e3">Etappe 03 abgeschlossen</button></div>
+ </div>
+</section>
+
+<!-- ETAPPE 4 -->
+<section class="etappe" id="e4">
+ <div class="wrap stack">
+  <div class="ethead"><div class="etnum"><small>ETAPPE</small>04</div><div><h2>Logistik steckt (fast) überall im Unternehmen</h2><p class="sub">Ein Rundgang durch das Organigramm</p></div></div>
+  <div class="prose stack">
+   <p>Logistik ist keine Abteilung im Keller, die nur Pakete packt. Sie ist eine <b>Querschnittsfunktion</b>: Sie verbindet die Abteilungen über Schnittstellen hinweg – genau das, was du bei Aufbau- und Ablauforganisation schon gesehen hast.</p>
+   <p>Am Beispiel eines Fahrradherstellers: Klicke jede Abteilung an. Was hat die Logistik dort zu tun?</p>
+  </div>
+  <div class="band" aria-label="Logistikbereiche entlang der Wertschöpfung">
+   <div><b>Beschaffungslogistik</b>Vom Lieferanten ins Werk</div>
+   <div><b>Produktionslogistik</b>Material durchs Werk</div>
+   <div><b>Distributionslogistik</b>Vom Werk zum Kunden</div>
+   <div class="rev"><b>Entsorgungs- &amp; Retourenlogistik</b>Zurück vom Kunden</div>
+   <div class="rev"><b>Informationslogistik</b>Daten zur richtigen Zeit</div>
+  </div>
+  <div class="grid2">
+   <div class="firm" id="firm"></div>
+   <div class="card deptinfo stack" id="deptinfo" aria-live="polite"><h3>Abteilung wählen</h3><p class="muted">Links eine Abteilung antippen.</p></div>
+  </div>
+  <div class="row"><span class="chip" id="deptCount">0 von 12 Abteilungen entdeckt</span></div>
+  <div class="merke"><p><b>Merke:</b> Logistik plant, steuert und kontrolliert Waren- <i>und</i> Informationsflüsse über alle Abteilungen hinweg. Sie sitzt an fast jeder Schnittstelle des Organigramms – darum heißt sie Querschnittsfunktion.</p></div>
+  <div><button class="btn donebtn" data-done="e4">Etappe 04 abgeschlossen</button></div>
+ </div>
+</section>
+
+<!-- ETAPPE 5 -->
+<section class="etappe" id="e5">
+ <div class="wrap stack">
+  <div class="ethead"><div class="etnum"><small>ETAPPE</small>05</div><div><h2>Warum ist das heute so schwierig?</h2><p class="sub">Komplexität und Herausforderungen moderner Lieferketten</p></div></div>
+  <div class="grid2">
+   <div class="card stack"><h4>Globalisierung</h4><p>Ein Lieferant in Übersee ist vielleicht günstiger, besser oder der einzige, der ein Teil herstellen kann. Die große Entfernung macht ihn aber schwerer zu kontrollieren: andere Rechtssysteme, Grenzübertritte, unsichere Infrastruktur. IT-Systeme helfen, weltweite Ketten sichtbar zu machen.</p></div>
+   <div class="card stack"><h4>Lieferengpässe &amp; „schlanke“ Lager</h4><p>Viele Unternehmen halten möglichst wenig Bestand (lean, Just-in-time). Das spart Geld – aber wenn ein Teil fehlt, steht schnell alles. Lange, komplexe Ketten verstärken das Risiko.</p></div>
+   <div class="card stack"><h4>Geopolitik &amp; Krisen</h4><p>Handelssanktionen, Konflikte oder eine Pandemie können weltweite Ketten an vielen Stellen gleichzeitig treffen.</p></div>
+   <div class="card stack"><h4>Teure, knappe Transporte</h4><p>Knappe Container, steigende Frachtraten, Treibstoffzuschläge, Handelskonflikte und Cyberangriffe machen Logistik kritischer und teurer.</p></div>
+  </div>
+
+  <h3>Fallbeispiele: Wenn ein Glied reißt</h3>
+  <div class="stack">
+   <details class="case"><summary><span class="yr">2011</span> Tsunami in Japan – und plötzlich gibt es kein schwarzes Auto mehr</summary><div class="in">
+    <div><b>Was passierte?</b><p>Nach dem Erdbeben und Tsunami fiel der einzige Lieferant bestimmter Farbpigmente aus. Mehrere Autohersteller konnten Fahrzeuge in bestimmten Lackfarben (z. B. „Tuxedo Black“, „Royal Red“) nicht mehr liefern.</p></div>
+    <div><b>Schwachstelle</b><p>Single Sourcing: Nur ein einziger Lieferant für ein kritisches Material.</p></div>
+    <div><b>Was hat man gelernt?</b><p>Die Hersteller beziehen Pigmente seither von zwei Lieferanten (Dual Sourcing). Toyota führt darauf zurück, dass es den Halbleitermangel 2021 besser überstanden hat.</p></div></div></details>
+   <details class="case"><summary><span class="yr">2020–22</span> Pandemie: Impfstoff ist da – aber die Spritzen fehlen</summary><div class="in">
+    <div><b>Was passierte?</b><p>Impfstoffe mussten durchgehend tiefgekühlt transportiert werden (Kühlkette). Beim Wechsel des Transporteurs durfte die Kühlung keine Sekunde unterbrochen sein. Für die „letzte Meile“ zu abgelegenen Impfzentren brauchte man lokale Anbieter, die Kühlung und Sendungsverfolgung beherrschen. Manche Zentren hatten keine Ultra-Tiefkühlschränke.</p></div>
+    <div><b>Schwachstelle</b><p>Ein Produkt ist nur nutzbar, wenn alles drumherum stimmt: Spritzen, Kühlschränke, geschultes Personal, Übergaben.</p></div>
+    <div><b>Was hat man gelernt?</b><p>Gutes SCM denkt das „große Ganze“: Was braucht es außer dem Produkt noch, damit es beim Kunden wirkt?</p></div></div></details>
+   <details class="case"><summary><span class="yr">2021</span> Ein Schiff blockiert den Suezkanal</summary><div class="in">
+    <div><b>Was passierte?</b><p>Ein Containerschiff steckte im Suezkanal fest und blockierte eine der wichtigsten Handelsrouten zwischen Asien und Europa.</p></div>
+    <div><b>Schwachstelle</b><p>Viele Lieferketten hängen an wenigen Engstellen (Choke Points). Weit entfernte Ereignisse treffen Unternehmen, die nie direkt mit der Reederei zu tun hatten.</p></div>
+    <div><b>Was hat man gelernt?</b><p>Die Weltbank rät, Medien regelmäßig nach Störungen zu durchsuchen und Ausweichrouten, andere Verkehrsträger und Spediteure vorzubereiten.</p></div></div></details>
+   <details class="case"><summary><span class="yr">ab 2021</span> Halbleitermangel: Autos ohne Chips</summary><div class="in">
+    <div><b>Was passierte?</b><p>Mikrochips wurden weltweit knapp. Fahrzeuge standen halbfertig auf Parkplätzen.</p></div>
+    <div><b>Schwachstelle</b><p>Wenige Hersteller für ein Bauteil, hohe Nachfrage aus anderen Branchen, wenig Bestand.</p></div>
+    <div><b>Was hat man gelernt?</b><p>Unternehmen stärkten die Beziehungen zu ihren Lieferanten und teilten mehr Informationen, z. B. durch abgestimmte Kapazitätsplanung. Gute Beziehungen bedeuten: Nach der Krise wird man zuerst beliefert.</p></div></div></details>
+  </div>
+  <p class="quelle">Fälle nach: Weltbank (2023), Beispielboxen 1, 8 und 19</p>
+
+  <div class="card stack" id="bullwhip">
+   <h3><span class="lvl">⭐⭐</span>Simulation: Der Peitscheneffekt (Bullwhip-Effekt)</h3>
+   <p class="prose">Ein Gesundheitszentrum braucht normalerweise 100 Spritzen pro Woche. Wegen einer Impfaktion bestellt es in Woche 4 und 5 plötzlich 150. Der Händler weiß nicht warum – er befürchtet, dass die Nachfrage weiter steigt, und bestellt beim Großhändler noch mehr. Der Großhändler macht es genauso beim Hersteller. Wie bei einer Peitsche wird ein kleiner Ausschlag am Griff zu einem riesigen Ausschlag an der Spitze.</p>
+   <div class="row">
+    <label for="bwK"><b>Überreaktion</b> der Stufen:</label>
+    <input type="range" id="bwK" min="0" max="2" step="0.25" value="1">
+    <output id="bwKo">1,00</output>
+    <button class="btn sm" id="bwShare" aria-pressed="false">Grund der Nachfrage mit allen teilen</button>
+   </div>
+   <div class="chartbox"><svg id="bwSvg" viewBox="0 0 640 300" role="img" aria-label="Liniendiagramm der Bestellmengen je Stufe über 12 Wochen"></svg></div>
+   <div class="legend" id="bwLegend"></div>
+   <div class="ampl" id="bwAmpl"></div>
+   <p class="fb" id="bwFb" aria-live="polite"></p>
+   <p class="small muted">Vereinfachtes Modell: Jede Stufe bestellt die Nachfrage, die sie sieht, plus einen Zuschlag für die erwartete Veränderung (Überreaktion × Veränderung zur Vorwoche). Werden die Informationen geteilt, reagiert niemand über.</p>
+  </div>
+  <div class="merke"><p><b>Merke:</b> Gegen Peitschen- und Ripple-Effekt hilft vor allem eines: <b>Informationen in der Kette teilen</b> – nach oben (Warum ändert sich die Nachfrage?) und nach unten (Wo gibt es eine Störung?).</p></div>
+  <div><button class="btn donebtn" data-done="e5">Etappe 05 abgeschlossen</button></div>
+ </div>
+</section>
+
+<!-- ETAPPE 6 -->
+<section class="etappe" id="e6">
+ <div class="wrap stack">
+  <div class="ethead"><div class="etnum"><small>ETAPPE</small>06</div><div><h2>Risikomanagement in der Lieferkette</h2><p class="sub">Erkennen, bewerten, handeln, lernen</p></div></div>
+  <p class="prose">Störungen können jederzeit und an jeder Stelle der Kette auftreten. Deshalb arbeiten Supply Chain Manager mit einem <b>Kreislauf</b> aus vier Schritten, der nie endet.</p>
+  <div class="cycle">
+   <div><b>Risiken erkennen</b><p>Was könnte schiefgehen – auch bei Lieferanten der 2. und 3. Stufe?</p></div>
+   <div><b>Risiken bewerten</b><p>Wie wahrscheinlich ist es? Wie schlimm wären die Folgen? Ergebnis: eine Heatmap.</p></div>
+   <div><b>Handeln</b><p>Strategie wählen und eine Person verantwortlich machen (Risk Owner).</p></div>
+   <div><b>Kommunizieren &amp; lernen</b><p>Alle Beteiligten informieren, aus Erfahrungen lernen – und von vorn beginnen.</p></div>
+  </div>
+  <div class="card stack">
+   <h4>Risikoarten (Auswahl)</h4>
+   <div class="row">
+    <span class="tag">Lieferant: Pleite, Qualität, Termintreue, Kapazität, Korruption, Ruf</span>
+    <span class="tag">Umwelt &amp; Soziales: Arbeitsbedingungen, Kinderarbeit, Umweltschäden, Arbeitsschutz</span>
+    <span class="tag">Beschaffungsmarkt: Rohstoffknappheit, Transport &amp; Lagerung</span>
+    <span class="tag">Technologie: Cyberangriff, Verlust von Know-how</span>
+    <span class="tag">Geopolitik: Sanktionen, Streiks, Zölle</span>
+    <span class="tag">Wirtschaft: Wechselkurs, Inflation</span>
+    <span class="tag">Naturkatastrophen</span>
+   </div>
+   <p class="quelle">nach: Weltbank (2023), Tabelle VII</p>
+  </div>
+
+  <div class="card stack" id="riskcase">
+   <h3><span class="lvl">⭐⭐</span>Fall: Die Velotec GmbH baut E-Bikes in Niederbayern</h3>
+   <p class="prose small muted">Velotec ist ein ausgedachtes Unternehmen. Die Risiken sind typisch für die Branche.</p>
+   <p class="prose">Bewerte jedes Risiko mit Wahrscheinlichkeit (W) und Auswirkung (A) von 1 (sehr gering) bis 5 (sehr hoch). Die Heatmap zeigt dir die Priorität. Wähle dann eine Strategie.</p>
+   <div class="grid2">
+    <div class="tablewrap"><table class="risktable" id="riskTable"><thead><tr><th>#</th><th>Risiko</th><th>W</th><th>A</th><th>Stufe</th></tr></thead><tbody></tbody></table></div>
+    <div class="stack">
+     <div class="heat" id="heat" aria-label="Heatmap Wahrscheinlichkeit gegen Auswirkung"></div>
+     <div class="row small"><span class="pill h">hoch</span><span class="pill e">erheblich</span><span class="pill m">mäßig</span><span class="pill g">gering</span></div>
+    </div>
+   </div>
+   <h4>Welche Strategie passt?</h4>
+   <div class="grid2 small">
+    <div><b>Vermeiden</b> – die geplante Lieferkette wird nicht umgesetzt, weil das Risiko zu groß ist (z. B. anderer Lieferant).</div>
+    <div><b>Vermindern</b> – umsetzen, aber besser überwachen: Berichte, Kontrollen, Audits, vertragliche Pflichten.</div>
+    <div><b>Streuen / Übertragen</b> – Risiko verteilen: zweiter Lieferant, Versicherung, Preisabsicherung.</div>
+    <div><b>Akzeptieren</b> – kleines Risiko bewusst tragen, weil Vorbeugung teurer wäre als der Schaden.</div>
+   </div>
+   <div class="tablewrap"><table class="risktable" id="stratTable"><thead><tr><th>#</th><th>Risiko</th><th>Deine Strategie</th><th>Rückmeldung</th></tr></thead><tbody></tbody></table></div>
+   <details class="help sol"><summary>Musterbewertung anzeigen</summary><div id="riskSol" class="stack small" style="margin-top:8px"></div></details>
+  </div>
+
+  <div class="card stack" id="vuln">
+   <h3><span class="lvl">⭐⭐⭐</span>Expertenwerkzeug: Wie verwundbar ist die Akku-Lieferkette?</h3>
+   <p class="prose">Die Weltbank bewertet Lieferketten mit fünf Merkmalen auf einer Skala von 1 (gut) bis 5 (schlecht). Je höher die Summe, desto genauer muss man hinschauen. Bewerte die Akku-Lieferkette von Velotec: Zellen aus China, nur ein Lieferant, Rohstoffe (Lithium, Kobalt) aus mehreren Kontinenten, wenig Einblick in Stufe 3 und 4.</p>
+   <div class="vuln" id="vulnRows"></div>
+   <p><b>Summe: <span id="vulnSum">0</span></b> → <span id="vulnRes" class="pill m">mittel</span></p>
+   <p class="small muted">Orientierung: bis 10 gering, 11–16 mittel, ab 17 hoch. Im Beispiel der Weltbank erreichte die Lieferkette für Medizingeräte 19 Punkte (hoch), die für den Krankenhausbau 12 Punkte (mittel).</p>
+  </div>
+  <div><button class="btn donebtn" data-done="e6">Etappe 06 abgeschlossen</button></div>
+ </div>
+</section>
+
+<!-- ETAPPE 7 -->
+<section class="etappe" id="e7">
+ <div class="wrap stack">
+  <div class="ethead"><div class="etnum"><small>ETAPPE</small>07</div><div><h2>Incoterms: Wer trägt das Risiko unterwegs?</h2><p class="sub">Wo Logistik und Recht zusammentreffen</p></div></div>
+  <div class="prose stack">
+   <p>Velotec kauft Akkuzellen in Shanghai. Unterwegs kann die Ware beschädigt werden oder verloren gehen. Wer zahlt dann? Und wer bezahlt Fracht, Versicherung und Zoll? Das regeln die <b>Incoterms</b> (International Commercial Terms) der Internationalen Handelskammer. Es gibt 11 Klauseln, die jeweils mit drei Buchstaben abgekürzt werden.</p>
+   <p><b>Aufgabe:</b> Wähle eine Klausel. Die rote Fahne zeigt, wo das Risiko vom Verkäufer (Petrol) auf den Käufer (Gelb) übergeht.</p>
+  </div>
+  <div class="card stack">
+   <div class="incobtns" id="incoBtns"></div>
+   <div class="tablewrap"><div class="route" id="route"></div></div>
+   <div id="incoInfo" class="stack" aria-live="polite"></div>
+   <div class="row small"><span><span class="chip" style="background:var(--petrol);color:var(--card)">Verkäufer zuständig</span></span><span><span class="chip" style="background:var(--signal);color:#16212b">Käufer zuständig</span></span></div>
+   <p class="small muted">Vereinfachte Darstellung nach Weltbank (2023), Tabellen XII und XIII (Incoterms 2020). Achtung: Incoterms regeln weder den Eigentumsübergang noch den ganzen Kaufvertrag.</p>
+  </div>
+  <div class="card mc" data-mc>
+   <p class="q">Mini-Check: Bei welcher Klausel trägt der Verkäufer am meisten – inklusive Einfuhrzoll im Land des Käufers?</p>
+   <div class="opts"><button data-a="0">EXW</button><button data-a="0">FOB</button><button data-a="0">CIF</button><button data-a="1">DDP</button></div>
+   <p class="fb" aria-live="polite" data-right="Richtig: Delivered Duty Paid – geliefert, verzollt. EXW ist das Gegenteil: Der Käufer holt ab Werk ab." data-wrong="Prüfe mit dem Werkzeug oben, bei welcher Klausel die Fahne ganz rechts steht und auch der Import beim Verkäufer liegt."></p>
+  </div>
+  <div><button class="btn donebtn" data-done="e7">Etappe 07 abgeschlossen</button></div>
+ </div>
+</section>
+
+<!-- ETAPPE 8 -->
+<section class="etappe" id="e8">
+ <div class="wrap stack">
+  <div class="ethead"><div class="etnum"><small>ETAPPE</small>08</div><div><h2>Logistik studieren – wie sieht das aus?</h2><p class="sub">Ein Blick in Hörsaal, Praxisbetrieb und Berufsalltag</p></div></div>
+  <div class="video">
+   <a class="vthumb" href="https://www.youtube.com/watch?v=MvaJcCooZ-w" target="_blank" rel="noopener">
+    <span class="play" aria-hidden="true">▶</span>
+    <span><b>Duales Studium Logistikmanagement – Einblick mit Prof. Pohl</b><br><span class="small">IU Internationale Hochschule · 5:38 Min. · öffnet YouTube</span></span>
+   </a>
+   <div class="stack">
+    <p>Prof. Johannes Pohl lehrt Wirtschaftsingenieurwesen am Standort München. Im Video besucht er einen Praxispartner und spricht mit einem Studierenden. Springe direkt zu einem Kapitel:</p>
+    <ul class="chapters">
+     <li><a href="https://www.youtube.com/watch?v=MvaJcCooZ-w&amp;t=10s" target="_blank" rel="noopener">0:10</a>Der Professor stellt sich vor</li>
+     <li><a href="https://www.youtube.com/watch?v=MvaJcCooZ-w&amp;t=69s" target="_blank" rel="noopener">1:09</a>Logistik – was ist das?</li>
+     <li><a href="https://www.youtube.com/watch?v=MvaJcCooZ-w&amp;t=119s" target="_blank" rel="noopener">1:59</a>Praxispartner &amp; Besuch vor Ort</li>
+     <li><a href="https://www.youtube.com/watch?v=MvaJcCooZ-w&amp;t=215s" target="_blank" rel="noopener">3:35</a>Interview mit einem Studierenden</li>
+     <li><a href="https://www.youtube.com/watch?v=MvaJcCooZ-w&amp;t=285s" target="_blank" rel="noopener">4:45</a>Studium an der Hochschule</li>
+     <li><a href="https://www.youtube.com/watch?v=MvaJcCooZ-w&amp;t=306s" target="_blank" rel="noopener">5:06</a>Logistikmanagement als Studienfach</li>
+    </ul>
+   </div>
+  </div>
+  <div class="card stack">
+   <h3>Arbeitsaufträge zum Video</h3>
+   <ol class="stack" style="margin:0;padding-left:20px">
+    <li><span class="lvl">⭐</span> Notiere, wie Prof. Pohl Logistik beschreibt. Welche Themen gehören laut Video dazu, außer „Lkw auf der Autobahn“?</li>
+    <li><span class="lvl">⭐</span> Wie ist das duale Studium organisiert? Wie viele Tage bist du im Betrieb, wie viele an der Hochschule?</li>
+    <li><span class="lvl">⭐⭐</span> Was erzählt der Studierende über seinen Alltag beim Praxispartner? Welche Aufgaben aus Etappe 03 erkennst du wieder?</li>
+    <li><span class="lvl">⭐⭐</span> Wie lange dauert das Studium, welche Voraussetzungen werden genannt und wie geht es nach dem Bachelor weiter?</li>
+    <li><span class="lvl">⭐⭐⭐</span> Beurteile: Für wen ist ein duales Studium besser, für wen ein Vollzeitstudium? Nenne je zwei Argumente.</li>
+   </ol>
+   <label for="vidNotes" class="small muted">Deine Notizen (bleiben in diesem Browser):</label>
+   <textarea id="vidNotes" data-store="vidNotes" placeholder="Stichpunkte zum Video …"></textarea>
+   <details class="help"><summary>Hilfekarte zu Auftrag 1 und 2</summary><p>Die Videobeschreibung nennt: Supply Chain Management, moderne Lagersysteme, Robotertechnik und Wertschöpfungsketten; Theorie und Praxis greifen von Anfang an ineinander. Im dualen Modell: drei Tage pro Woche beim Praxispartner, zwei Tage an der Hochschule.</p></details>
+  </div>
+
+  <h3>So könnte ein Studienplan aussehen</h3>
+  <p class="prose small muted">Beispielhafter Aufbau eines Bachelorstudiums (6–7 Semester). Die Module heißen an jeder Hochschule etwas anders – vergleiche selbst auf den Seiten der Hochschulen.</p>
+  <div class="sem">
+   <div class="card"><h4>Semester 1–2: Grundlagen</h4><ul><li>Betriebs- und Volkswirtschaftslehre</li><li>Wirtschaftsmathematik &amp; Statistik</li><li>Rechnungswesen</li><li>Wirtschaftsinformatik</li><li>Wirtschaftsenglisch</li><li>Grundlagen der Logistik</li></ul></div>
+   <div class="card"><h4>Semester 3–4: Logistik-Kern</h4><ul><li>Beschaffungs-, Produktions- und Distributionslogistik</li><li>Lager- und Materialflusssysteme</li><li>Transport &amp; Verkehr</li><li>Operations Research (Optimierung, z. B. Routenplanung)</li><li>ERP-Systeme</li><li>Wirtschaftsrecht</li></ul></div>
+   <div class="card"><h4>Semester 5–7: Vertiefung &amp; Praxis</h4><ul><li>Supply Chain Management &amp; Risikomanagement</li><li>Digitalisierung, Robotik, Automatisierung</li><li>Nachhaltige Logistik</li><li>Projektarbeit mit Unternehmen</li><li>Praxisphase / Auslandssemester</li><li>Bachelorarbeit</li></ul></div>
+  </div>
+  <div class="card stack">
+   <h4>Das kennst du schon aus Wirtschaftsinformatik</h4>
+   <div class="row"><span class="tag">Organigramm → Wer ist zuständig?</span><span class="tag">EPK → Prozesse modellieren</span><span class="tag">ERP → gemeinsame Daten für alle Abteilungen</span><span class="tag">Algorithmen → Routen- und Lageroptimierung</span><span class="tag">Tabellenkalkulation → Bestände und Kosten</span></div>
+  </div>
+
+  <div class="card stack" id="skills">
+   <h3>Passt SCM zu mir? – Selbstcheck</h3>
+   <p class="prose">Die Weltbank nennt fünf Fähigkeiten, die gute Supply Chain Manager auszeichnen. Schätze dich ehrlich ein (1 = trifft kaum zu, 5 = trifft voll zu).</p>
+   <div class="skill" id="skillRows"></div>
+   <p class="fb" id="skillFb" aria-live="polite"></p>
+  </div>
+  <div class="card stack">
+   <h4>Mögliche Berufe nach dem Studium</h4>
+   <div class="grid3 small">
+    <div><b>Einkäufer/in (Strategic Buyer)</b><br>sucht Lieferanten aus, verhandelt, bewertet Risiken</div>
+    <div><b>Supply Chain Planner</b><br>plant Bedarf, Bestände und Kapazitäten</div>
+    <div><b>Disponent/in</b><br>steuert Transporte und Touren</div>
+    <div><b>Lager- oder Standortleitung</b><br>führt Teams, Technik und Prozesse im Lager</div>
+    <div><b>Logistikcontroller/in</b><br>misst Kosten und Kennzahlen</div>
+    <div><b>Außenhandel &amp; Zoll</b><br>Incoterms, Zollpapiere, internationale Verträge</div>
+   </div>
+  </div>
+  <div><button class="btn donebtn" data-done="e8">Etappe 08 abgeschlossen</button></div>
+ </div>
+</section>
+
+<!-- ETAPPE 9 -->
+<section class="etappe" id="e9">
+ <div class="wrap stack">
+  <div class="ethead"><div class="etnum"><small>ETAPPE</small>09</div><div><h2>Aufgaben und Selbsttest</h2><p class="sub">Erst Basis, dann so weit du kommst</p></div></div>
+  <div id="tasks" class="stack"></div>
+  <h3>Quiz: Bist du bereit für die Lieferkette?</h3>
+  <div class="quiz stack" id="quiz"></div>
+  <div class="row"><span class="score" id="quizScore">0 / 10</span><button class="btn sm" id="quizReset">Quiz neu starten</button></div>
+  <div><button class="btn donebtn" data-done="e9">Etappe 09 abgeschlossen</button></div>
+ </div>
+</section>
+</main>
+
+<footer>
+ <div class="wrap stack">
+  <b>Quellen</b>
+  <ul>
+   <li>The World Bank (2023): Supply Chain Management – An introduction and practical toolset for procurement practitioners. Procurement Guidance, 1. Aufl., Washington DC. Die Inhalte wurden für die Jahrgangsstufe 10 übersetzt, vereinfacht und gekürzt (nichtkommerzielle Nutzung mit Quellenangabe).</li>
+   <li>IU Internationale Hochschule: „Duales Studium Logistikmanagement – Einblick mit Prof. Pohl“, YouTube, 5:38 Min. <a href="https://www.youtube.com/watch?v=MvaJcCooZ-w" target="_blank" rel="noopener">youtube.com/watch?v=MvaJcCooZ-w</a></li>
+   <li>Die Velotec GmbH, der Schulneubau und das Spritzen-Modell sind Unterrichtsbeispiele. Der Studienplan zeigt einen typischen, keinen konkreten Studiengang.</li>
+  </ul>
+  <p>Wirtschaftsinformatik 10 · Lernbereich 1: Unternehmen als vernetztes System · Supply Chain Management</p>
+  <p><button class="btn sm" id="resetAll">Gesamten Fortschritt und alle Notizen löschen</button></p>
+ </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+var LS = {
+  get:function(k,d){try{var v=localStorage.getItem("scm10_"+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},
+  set:function(k,v){try{localStorage.setItem("scm10_"+k,JSON.stringify(v));}catch(e){}}
+};
+function $(s,r){return (r||document).querySelector(s);}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));}
+function el(tag,attrs,html){var e=document.createElement(tag);if(attrs)for(var k in attrs){if(k==="class")e.className=attrs[k];else e.setAttribute(k,attrs[k]);}if(html!==undefined)e.innerHTML=html;return e;}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+/* ---------- Fortschritt ---------- */
+var done = LS.get("done",{});
+function renderProgress(){
+  var ids=["e1","e2","e3","e4","e5","e6","e7","e8","e9"];var n=0;
+  ids.forEach(function(id){
+    var b=$('[data-done="'+id+'"]');var a=$('nav.chap a[href="#'+id+'"]');
+    if(done[id]){n++;b.textContent="✓ "+b.textContent.replace(/^✓ /,"");b.setAttribute("aria-pressed","true");a.classList.add("done");}
+    else{b.textContent=b.textContent.replace(/^✓ /,"");b.setAttribute("aria-pressed","false");a.classList.remove("done");}
+  });
+  $("#pbar").style.width=(n/ids.length*100)+"%";
+}
+$$("[data-done]").forEach(function(b){b.addEventListener("click",function(){var id=b.getAttribute("data-done");done[id]=!done[id];LS.set("done",done);renderProgress();});});
+renderProgress();
+
+/* ---------- Notizen ---------- */
+function bindStore(t){var k=t.getAttribute("data-store");t.value=LS.get("note_"+k,"");t.addEventListener("input",function(){LS.set("note_"+k,t.value);});}
+$$("textarea[data-store]").forEach(bindStore);
+
+/* ---------- Mini-Checks ---------- */
+function bindMC(box){
+  var fb=$(".fb",box);
+  $$(".opts button",box).forEach(function(b){
+    b.addEventListener("click",function(){
+      var ok=b.getAttribute("data-a")==="1";
+      $$(".opts button",box).forEach(function(x){x.classList.remove("right","wrong");});
+      b.classList.add(ok?"right":"wrong");
+      fb.textContent=ok?fb.getAttribute("data-right"):fb.getAttribute("data-wrong");
+    });
+  });
+}
+$$("[data-mc]").forEach(bindMC);
+
+/* ---------- Etappe 2: Tiers ---------- */
+var branches=[
+  {t2:"Erdbau-Subunternehmer",t3:["Baumaschinen-Vermietung"],t4:["Baumaschinen-Hersteller"]},
+  {t2:"Beton-Subunternehmer",t3:["Baustoffhandel"],t4:["Sandlieferant","Kieslieferant"]},
+  {t2:"Rohbau / Holzbau",t3:["Zeitarbeitsfirma","Holzhändler"],t4:["Sägewerk","Forstbetrieb"]},
+  {t2:"Sanitär-Subunternehmer",t3:["Rohrhändler","Pumpenhändler"],t4:["Rohrhersteller","Pumpenhersteller"]},
+  {t2:"Dachdecker",t3:["Dachbaustoffhandel"],t4:["Ziegelwerk","Dämmstoff-Hersteller"]},
+  {t2:"Klima- und Lüftungsbau",t3:["Klima-Großhändler"],t4:["Klimageräte-Hersteller","Lüftungskanal-Hersteller"]}
+];
+var tierShown=4;
+var grid=$("#tiergrid");
+function buildTiers(){
+  grid.innerHTML="";
+  var heads=["Stufe 4<br><span class='small'>Hersteller, Rohstoffe</span>","Stufe 3<br><span class='small'>Händler, Dienstleister</span>","Stufe 2<br><span class='small'>Subunternehmer</span>","","Stufe 1<br><span class='small'>Generalunternehmer</span>","Auftraggeber"];
+  // Spalten: 0=T4, 1=T3, 2=T2, 3=Pfeil, 4=T1, 5=Kunde
+  heads.forEach(function(h,i){var d=el("div",{class:"tierhead"},h);if(i===3){d.style.borderBottom="none";}grid.appendChild(d);});
+  branches.forEach(function(br,bi){
+    var c4=el("div",{class:"tcell"});br.t4.forEach(function(n){var b=el("button",{class:"node","data-tier":"4","data-br":bi},n);c4.appendChild(b);});
+    var c3=el("div",{class:"tcell"});br.t3.forEach(function(n){var b=el("button",{class:"node","data-tier":"3","data-br":bi},n);c3.appendChild(b);});
+    var c2=el("div",{class:"tcell"});c2.appendChild(el("button",{class:"node","data-tier":"2","data-br":bi},br.t2));
+    var arr=el("div",{class:"tcell",style:"align-items:center;color:var(--muted);font-size:1.4rem"},"→");
+    [c4,c3,c2,arr].forEach(function(c){c.style.gridRow=String(bi+2);});
+    c4.style.gridColumn="1";c3.style.gridColumn="2";c2.style.gridColumn="3";arr.style.gridColumn="4";
+    grid.appendChild(c4);grid.appendChild(c3);grid.appendChild(c2);grid.appendChild(arr);
+  });
+  var t1=el("div",{class:"span-all",style:"grid-column:5"});t1.appendChild(el("div",{class:"node static",id:"nodeT1"},"Generalunternehmer<br>„Bau AG“"));grid.appendChild(t1);
+  var cu=el("div",{class:"span-all",style:"grid-column:6"});cu.appendChild(el("div",{class:"node static contract",id:"nodeCust"},"Landkreis<br>(neue Schule)"));grid.appendChild(cu);
+  $$(".node[data-tier]",grid).forEach(function(n){n.addEventListener("click",function(){fail(n);});});
+  applyTierVis();
+}
+function applyTierVis(){
+  var count=2;
+  $$(".node[data-tier]",grid).forEach(function(n){var t=+n.getAttribute("data-tier");var vis=t<=tierShown;n.classList.toggle("hidden",!vis);if(vis)count++;});
+  if(tierShown<1)count=1;
+  $("#orgCount").textContent=count;
+  $$("[data-tier].btn").forEach(function(b){b.setAttribute("aria-pressed",String(+b.getAttribute("data-tier")===tierShown));});
+}
+$$("button.btn[data-tier]").forEach(function(b){b.addEventListener("click",function(){tierShown=+b.getAttribute("data-tier");resetFail();applyTierVis();});});
+var timers=[];
+function resetFail(){timers.forEach(clearTimeout);timers=[];$$(".node",grid).forEach(function(n){n.classList.remove("fail","hit","late");});$("#rippleMsg").innerHTML='<p class="muted">Noch kein Ausfall. Der gestrichelte gelbe Rahmen zeigt: Der Landkreis hat nur mit dem Generalunternehmer einen Vertrag – ist aber von allen anderen abhängig.</p>';}
+$("#tierReset").addEventListener("click",resetFail);
+function fail(n){
+  resetFail();
+  var t=+n.getAttribute("data-tier"),bi=+n.getAttribute("data-br");var br=branches[bi];
+  n.classList.add("fail");
+  var seq=[];
+  if(t===4){$$('.node[data-tier="3"][data-br="'+bi+'"]',grid).forEach(function(x){seq.push(x);});}
+  if(t>=3){seq.push($('.node[data-tier="2"][data-br="'+bi+'"]',grid));}
+  var d=0;
+  if(t===4){var t3s=$$('.node[data-tier="3"][data-br="'+bi+'"]',grid);d+=500;timers.push(setTimeout(function(){t3s.forEach(function(x){x.classList.add("hit");});},d));}
+  if(t>=3){var t2=$('.node[data-tier="2"][data-br="'+bi+'"]',grid);d+=500;timers.push(setTimeout(function(){t2.classList.add("hit");},d));}
+  d+=500;timers.push(setTimeout(function(){$("#nodeT1").classList.add("late");},d));
+  d+=500;timers.push(setTimeout(function(){$("#nodeCust").classList.add("late");
+    $("#rippleMsg").innerHTML='<p><b style="color:var(--risk)">Ausfall: '+n.textContent+'</b> (Stufe '+t+')</p><p>Die Störung wandert Stufe für Stufe weiter: '+(t===4?br.t3.join(" / ")+' kann nicht liefern → ':'')+(t>=3?br.t2+' kann nicht arbeiten → ':'')+'die Bau AG gerät in Verzug → <b>die Eröffnung der Schule wird verschoben.</b></p><p class="muted">Der Landkreis hatte mit '+n.textContent+' keinen Vertrag und wusste vielleicht nicht einmal, dass es dieses Unternehmen gibt. Das ist der Ripple-Effekt.</p>';
+  },d));
+}
+buildTiers();
+
+/* ---------- Etappe 3: Sortieren ---------- */
+var bins=[{id:"b",n:"Beschaffung"},{id:"p",n:"Produktion"},{id:"l",n:"Logistik"},{id:"it",n:"IT",sup:1},{id:"pe",n:"Personal",sup:1},{id:"r",n:"Recht",sup:1}];
+var cards=[
+  ["Lieferanten auswählen und bewerten","b"],["Preise und Lieferbedingungen verhandeln","b"],["Bedarf in Anforderungen an Lieferanten übersetzen","b"],
+  ["Nachfrage für das nächste Quartal prognostizieren","p"],["Qualität in der Fertigung prüfen","p"],["Maschinen und Personal für die Fertigung einplanen","p"],
+  ["Zwischen Lkw, Bahn, Schiff und Flugzeug wählen","l"],["Kühlkette für Impfstoffe sicherstellen","l"],["Zollpapiere auf Vollständigkeit prüfen","l"],["Auslieferung auf der letzten Meile organisieren","l"],
+  ["Bestellung sofort für Lager und Buchhaltung sichtbar machen","it"],["Sendungsverfolgung für Kunden bereitstellen","it"],
+  ["Fachkräfte für das Supply Chain Management gewinnen","pe"],
+  ["Liefervertrag mit Haftungsregeln formulieren","r"],["Streit über eine beschädigte Lieferung klären","r"]
+];
+var selCard=null,rightN=0;
+function buildSort(){
+  var pool=$("#pool"),bw=$("#bins");pool.innerHTML="";bw.innerHTML="";selCard=null;rightN=0;
+  shuffle(cards.slice()).forEach(function(c){var b=el("button",{class:"tcard","data-k":c[1]},c[0]);b.addEventListener("click",function(){if(b.classList.contains("right"))return;$$(".tcard.sel").forEach(function(x){x.classList.remove("sel");});selCard=b;b.classList.add("sel");});pool.appendChild(b);});
+  bins.forEach(function(bn){var d=el("div",{class:"bin"+(bn.sup?" sup":""),role:"button",tabindex:"0","data-id":bn.id},"<h4>"+bn.n+"</h4>");
+    function drop(){if(!selCard)return;var k=selCard.getAttribute("data-k");if(k===bn.id){selCard.classList.remove("sel");selCard.classList.add("right");d.appendChild(selCard);rightN++;$("#sortFb").textContent="Passt.";selCard=null;}else{var s=selCard;s.classList.add("wrong");setTimeout(function(){s.classList.remove("wrong");},450);$("#sortFb").textContent="Noch nicht. Überlege: Geht es um Einkaufen, Herstellen, Bewegen der Ware – oder um Daten, Menschen, Verträge?";}
+      $("#sortScore").textContent=rightN+" von "+cards.length+" richtig";if(rightN===cards.length)$("#sortFb").textContent="Alle Karten richtig zugeordnet. Stark!";}
+    d.addEventListener("click",drop);d.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();drop();}});bw.appendChild(d);});
+  $("#sortScore").textContent="0 von "+cards.length+" richtig";$("#sortFb").textContent="";
+}
+$("#sortReset").addEventListener("click",buildSort);buildSort();
+
+/* ---------- Etappe 4: Abteilungen ---------- */
+var depts=[
+  {n:"Geschäftsleitung",s:"Strategie",t:"Entscheidet, wo produziert wird, welche Lieferanten strategisch wichtig sind und wie viel Risiko das Unternehmen tragen will (z. B. ein Lieferant oder zwei?).",b:"Beispiel: Velotec verlegt die Rahmenfertigung von Asien nach Tschechien, um Lieferzeiten zu verkürzen.",tags:["Strategie","Netzwerkplanung"]},
+  {n:"Einkauf",s:"Beschaffung",t:"Wählt Lieferanten aus, verhandelt Preise und Lieferbedingungen (z. B. Incoterms) und plant, wann welche Teile ins Werk kommen.",b:"Beispiel: Für Bremsen werden zwei Lieferanten unter Vertrag genommen, damit ein Ausfall nicht die Produktion stoppt.",tags:["Beschaffungslogistik"]},
+  {n:"Wareneingang & Lager",s:"Lagerwirtschaft",t:"Nimmt Ware an, prüft sie, lagert sie ein und kommissioniert sie. Bestimmt Lagerplätze und Sicherheitsbestände.",b:"Beispiel: Akkus werden in einem brandgeschützten Bereich gelagert – eine gesetzliche Auflage.",tags:["Beschaffungslogistik","Lager"]},
+  {n:"Produktion",s:"Fertigung",t:"Braucht das richtige Material zur richtigen Zeit am richtigen Montageplatz. Die innerbetriebliche Logistik versorgt die Bänder (z. B. mit Routenzügen).",b:"Beispiel: Fehlen die Sattel am Band, stehen 40 Mitarbeitende still.",tags:["Produktionslogistik"]},
+  {n:"Vertrieb",s:"Absatz",t:"Sagt Kunden Liefertermine zu – das geht nur, wenn er Bestände und Transportzeiten kennt. Liefert Absatzprognosen an die Planung.",b:"Beispiel: Ein Fahrradhändler bestellt 50 Räder für den Frühling. Kann Velotec bis März liefern?",tags:["Distributionslogistik","Informationslogistik"]},
+  {n:"Marketing",s:"Werbung",t:"Aktionen und Rabatte erzeugen Nachfragespitzen. Die Logistik muss vorher davon wissen – sonst droht der Peitscheneffekt.",b:"Beispiel: Eine Frühjahrsaktion verdoppelt die Bestellungen. Das Lager wurde nicht informiert.",tags:["Informationslogistik"]},
+  {n:"Versand",s:"Distribution",t:"Verpackt, erstellt Lieferscheine und Versandpapiere, wählt Spediteure und Touren aus.",b:"Beispiel: E-Bikes gehen auf Paletten per Spedition, Ersatzteile als Paket.",tags:["Distributionslogistik"]},
+  {n:"Kundenservice",s:"Retouren",t:"Bearbeitet Reklamationen und Rücksendungen. Die Retourenlogistik prüft, repariert und lagert Ware wieder ein.",b:"Beispiel: Ein defekter Akku wird zurückgeholt – als Gefahrgut mit besonderen Vorschriften.",tags:["Retourenlogistik"]},
+  {n:"Rechnungswesen & Controlling",s:"Finanzen",t:"Bucht Rechnungen, misst Logistikkosten und Kennzahlen (z. B. Lieferzeit, Lagerkosten, Termintreue).",b:"Beispiel: Controlling zeigt, dass Expressfracht 8 % der Kosten verursacht.",tags:["Finanzfluss","Kennzahlen"]},
+  {n:"IT",s:"Informationssysteme",t:"Betreibt ERP- und Lagerverwaltungssysteme, Schnittstellen zu Spediteuren und Sendungsverfolgung. Schützt vor Cyberangriffen.",b:"Beispiel: Fällt das ERP aus, weiß niemand mehr, was wo liegt.",tags:["Informationslogistik"]},
+  {n:"Personal",s:"Human Resources",t:"Gewinnt Fachkräfte: Lagerpersonal, Disponenten, Supply Chain Planner. Plant Schichten für Spitzenzeiten.",b:"Beispiel: Für die Saison werden zusätzliche Kommissionierer gebraucht.",tags:["Personal"]},
+  {n:"Umwelt & Nachhaltigkeit",s:"Compliance",t:"Prüft Arbeitsbedingungen und Umweltfolgen in der Lieferkette, plant Verpackungsrücknahme und Recycling von Akkus.",b:"Beispiel: Der Kobaltlieferant muss nachweisen, dass er keine Kinderarbeit einsetzt.",tags:["Entsorgungslogistik","Soziales"]}
+];
+var seenD=LS.get("seenD",{});
+function buildFirm(){
+  var f=$("#firm");f.innerHTML="";
+  depts.forEach(function(d,i){var b=el("button",{class:"dept"+(seenD[i]?" seen":""),"aria-pressed":"false"},d.n+"<small>"+d.s+"</small>");
+    b.addEventListener("click",function(){$$(".dept").forEach(function(x){x.setAttribute("aria-pressed","false");});b.setAttribute("aria-pressed","true");seenD[i]=1;LS.set("seenD",seenD);b.classList.add("seen");
+      $("#deptinfo").innerHTML="<h3>"+d.n+"</h3><p>"+d.tags.map(function(t){return '<span class="tag">'+t+"</span>";}).join("")+"</p><p>"+d.t+"</p><p class='muted'>"+d.b+"</p>";countD();});
+    f.appendChild(b);});
+  countD();
+}
+function countD(){var n=Object.keys(seenD).length;$("#deptCount").textContent=n+" von "+depts.length+" Abteilungen entdeckt"+(n===depts.length?" – Logistik ist wirklich überall!":"");}
+buildFirm();
+
+/* ---------- Etappe 5: Bullwhip ---------- */
+var stages=[{n:"Gesundheitszentrum (Nachfrage)",c:"var(--ink)"},{n:"Händler",c:"var(--petrol)"},{n:"Großhändler",c:"var(--warn)"},{n:"Hersteller",c:"var(--risk)"}];
+var W=12,base=100;
+function demand(){var d=[];for(var w=1;w<=W;w++){d.push(w===4||w===5?150:base);}return d;}
+function simulate(k){
+  var series=[demand()];
+  for(var s=1;s<stages.length;s++){
+    var inp=series[s-1],out=[];
+    for(var w=0;w<W;w++){var prev=w===0?inp[0]:inp[w-1];var o=inp[w]+k*(inp[w]-prev);out.push(Math.max(0,Math.round(o)));}
+    series.push(out);
+  }
+  return series;
+}
+function drawBW(){
+  var share=$("#bwShare").getAttribute("aria-pressed")==="true";
+  var k=share?0:parseFloat($("#bwK").value);
+  $("#bwKo").textContent=(share?"0,00 (geteilt)":parseFloat($("#bwK").value).toFixed(2).replace(".",","));
+  var S=simulate(k);var maxV=0;S.forEach(function(s){s.forEach(function(v){if(v>maxV)maxV=v;});});
+  var top=Math.max(200,Math.ceil(maxV/100)*100);
+  var x0=50,x1=620,y0=20,y1=255;
+  function X(w){return x0+(x1-x0)*w/(W-1);}function Y(v){return y1-(y1-y0)*v/top;}
+  var g="";
+  var step=top<=400?50:(top<=1000?100:200);
+  for(var v=0;v<=top;v+=step){g+='<line x1="'+x0+'" x2="'+x1+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--line)" stroke-width="1"/><text x="'+(x0-6)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="11" fill="var(--muted)">'+v+'</text>';}
+  for(var w=0;w<W;w++){g+='<text x="'+X(w)+'" y="'+(y1+16)+'" text-anchor="middle" font-size="11" fill="var(--muted)">'+(w+1)+'</text>';}
+  g+='<text x="'+((x0+x1)/2)+'" y="294" text-anchor="middle" font-size="12" fill="var(--muted)">Woche</text>';
+  g+='<text x="12" y="'+((y0+y1)/2)+'" font-size="12" fill="var(--muted)" transform="rotate(-90 12 '+((y0+y1)/2)+')" text-anchor="middle">Bestellmenge (Stück)</text>';
+  S.forEach(function(s,i){var p=s.map(function(v,w){return (w?"L":"M")+X(w).toFixed(1)+","+Y(v).toFixed(1);}).join("");
+    g+='<path d="'+p+'" fill="none" stroke="'+stages[i].c+'" stroke-width="'+(i===0?3.5:2.5)+'" stroke-linejoin="round"'+(i===0?' stroke-dasharray="6 4"':'')+'/>';
+    var last=s[W-1];});
+  $("#bwSvg").innerHTML=g;
+  $("#bwLegend").innerHTML=stages.map(function(s){return '<span style="--c:'+s.c+'">'+s.n+'</span>';}).join("");
+  $("#bwAmpl").innerHTML=S.map(function(s,i){var mx=Math.max.apply(null,s),mn=Math.min.apply(null,s);return '<div><span class="small muted">'+stages[i].n+'</span><br><b>'+(mx-mn)+'</b> <span class="small">Stück Schwankung</span><br><span class="small muted">min '+mn+' · max '+mx+'</span></div>';}).join("");
+  var spread=Math.max.apply(null,S[3])-Math.min.apply(null,S[3]);
+  $("#bwFb").innerHTML=share?"<b>Informationen geteilt:</b> Alle wissen, dass die Impfaktion nur zwei Wochen dauert. Niemand überreagiert – die Bestellungen folgen genau der echten Nachfrage.":(k===0?"Ohne Überreaktion folgen alle Stufen der Nachfrage.":"Die echte Nachfrage schwankt nur um 50 Stück. Beim Hersteller kommt eine Schwankung von <b>"+spread+" Stück</b> an. Danach bricht die Nachfrage ein – Lager laufen voll, Maschinen stehen still.");
+}
+$("#bwK").addEventListener("input",drawBW);
+$("#bwShare").addEventListener("click",function(){var b=this;b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"));drawBW();});
+drawBW();
+
+/* ---------- Etappe 6: Risiko-Heatmap ---------- */
+var risks=[
+  {n:"Akkuzellen kommen nur von einem Lieferanten in China",sw:3,sa:5,st:"streuen",why:"Zweiten Zelllieferanten aufbauen (Dual Sourcing), Sicherheitsbestand erhöhen."},
+  {n:"Containerknappheit und Hafenstau verzögern Lieferungen",sw:4,sa:3,st:"vermindern",why:"Frachtverträge länger abschließen, Ausweichrouten und -häfen planen, Liefersituation laufend überwachen."},
+  {n:"Cyberangriff legt das ERP-System lahm",sw:3,sa:4,st:"vermindern",why:"Datensicherung, Notfallplan, Schulungen; zusätzlich Cyberversicherung (Übertragen)."},
+  {n:"Kinderarbeit beim Kobaltabbau (Stufe 4)",sw:3,sa:5,st:"vermeiden",why:"Nur Zellhersteller mit nachgewiesen sauberer Rohstoffkette beauftragen; vertragliche Pflichten und unangekündigte Audits. Lässt sich das nicht sicherstellen: Lieferkette nicht nutzen."},
+  {n:"Kleine Lackkratzer an einzelnen Rahmen",sw:4,sa:1,st:"akzeptieren",why:"Lassen sich billig ausbessern; Vorbeugung wäre teurer als der Schaden."},
+  {n:"Der Euro verliert gegenüber dem Yuan an Wert",sw:3,sa:2,st:"streuen",why:"Währung absichern (Hedging) oder in Euro abrechnen – Risiko wird übertragen."}
+];
+var rv=LS.get("risks",risks.map(function(){return {w:0,a:0,s:""};}));
+function level(w,a){var p=w*a;if(!w||!a)return null;if(p>=15)return ["h","hoch"];if(p>=8)return ["e","erheblich"];if(p>=4)return ["m","mäßig"];return ["g","gering"];}
+function buildRisk(){
+  var tb=$("#riskTable tbody");tb.innerHTML="";var tb2=$("#stratTable tbody");tb2.innerHTML="";
+  risks.forEach(function(r,i){
+    var tr=el("tr");
+    tr.innerHTML="<td><b>"+(i+1)+"</b></td><td>"+r.n+"</td>";
+    ["w","a"].forEach(function(key){var td=el("td");var s=el("select",{id:"r"+i+key,"aria-label":(key==="w"?"Wahrscheinlichkeit":"Auswirkung")+" Risiko "+(i+1)});s.innerHTML='<option value="0">–</option>'+[1,2,3,4,5].map(function(v){return '<option'+(rv[i][key]===v?" selected":"")+">"+v+"</option>";}).join("");s.addEventListener("change",function(){rv[i][key]=+s.value;LS.set("risks",rv);updRisk();});td.appendChild(s);tr.appendChild(td);});
+    tr.appendChild(el("td",{id:"rl"+i}));tb.appendChild(tr);
+    var tr2=el("tr");tr2.innerHTML="<td><b>"+(i+1)+"</b></td><td>"+r.n+"</td>";
+    var td=el("td");var s=el("select",{id:"rs"+i,"aria-label":"Strategie Risiko "+(i+1)});s.innerHTML='<option value="">wählen …</option><option value="vermeiden">Vermeiden</option><option value="vermindern">Vermindern</option><option value="streuen">Streuen / Übertragen</option><option value="akzeptieren">Akzeptieren</option>';s.value=rv[i].s||"";
+    s.addEventListener("change",function(){rv[i].s=s.value;LS.set("risks",rv);updStrat(i);});td.appendChild(s);tr2.appendChild(td);tr2.appendChild(el("td",{id:"rf"+i,class:"small"}));tb2.appendChild(tr2);updStrat(i);
+  });
+  $("#riskSol").innerHTML=risks.map(function(r,i){var l=level(r.sw,r.sa);return "<p><b>"+(i+1)+". "+r.n+"</b> – W "+r.sw+", A "+r.sa+' → <span class="pill '+l[0]+'">'+l[1]+"</span><br>Strategie: <b>"+cap(r.st)+"</b>. "+r.why+"</p>";}).join("")+'<p class="muted">Bewertungen sind immer etwas subjektiv. Abweichungen um einen Punkt sind in Ordnung, wenn du sie begründen kannst.</p>';
+  updRisk();
+}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+function updStrat(i){var f=$("#rf"+i);var v=rv[i].s;if(!v){f.textContent="";return;}var r=risks[i];
+  if(v===r.st)f.innerHTML='<span style="color:var(--ok)">✓ gut gewählt.</span> '+r.why;
+  else if((v==="vermindern"&&(r.st==="streuen"||r.st==="vermeiden"))||(v==="streuen"&&r.st==="vermindern"))f.innerHTML='<span style="color:var(--warn)">Vertretbar,</span> aber denk an: '+r.why;
+  else f.innerHTML='<span style="color:var(--risk)">Überdenke das.</span> Wie schwer wiegt das Risiko in der Heatmap?';}
+function updRisk(){
+  var h=$("#heat");h.innerHTML="";
+  for(var w=5;w>=1;w--){h.appendChild(el("div",{class:"ax"},w));for(var a=1;a<=5;a++){var l=level(w,a);var c=el("div",{class:"cell lv-"+l[0],"data-w":w,"data-a":a});h.appendChild(c);}}
+  h.appendChild(el("div",{class:"ax"},""));for(var a2=1;a2<=5;a2++)h.appendChild(el("div",{class:"ax"},a2));
+  rv.forEach(function(r,i){var l=level(r.w,r.a);var cell=$("#rl"+i);cell.innerHTML=l?'<span class="pill '+l[0]+'">'+l[1]+"</span>":"";if(l){var c=$('.cell[data-w="'+r.w+'"][data-a="'+r.a+'"]',h);c.appendChild(el("div",{class:"dot"},String(i+1)));}});
+}
+var hz=el("p",{class:"small muted"},"↑ Wahrscheinlichkeit · → Auswirkung");
+buildRisk();$("#heat").parentNode.appendChild(hz);
+
+/* Verwundbarkeit */
+var vdims=[["Anzahl der Stufen","1 = sehr wenige · 5 = sehr viele"],["Kritikalität (gibt es Alternativen?)","1 = viele Anbieter · 5 = einziger Anbieter"],["Geografische Lage","1 = nah · 5 = weit weg"],["Beziehung zum Lieferanten","1 = ausgezeichnet · 5 = schlecht"],["Verfügbarkeit von Informationen","1 = ausgezeichnet · 5 = schlecht"]];
+var vv=LS.get("vuln",[3,3,3,3,3]);
+function buildVuln(){var box=$("#vulnRows");box.innerHTML="";
+  vdims.forEach(function(d,i){var lab=el("label",{for:"v"+i},"<b>"+d[0]+"</b><br><span class='small muted'>"+d[1]+"</span>");var wrap=el("div",{class:"row"});var r=el("input",{type:"range",min:"1",max:"5",step:"1",id:"v"+i,value:String(vv[i])});var o=el("output",{},String(vv[i]));
+    r.addEventListener("input",function(){vv[i]=+r.value;o.textContent=r.value;LS.set("vuln",vv);sumV();});wrap.appendChild(r);wrap.appendChild(o);box.appendChild(lab);box.appendChild(wrap);});
+  sumV();}
+function sumV(){var s=vv.reduce(function(a,b){return a+b;},0);$("#vulnSum").textContent=s;var r=$("#vulnRes");if(s>=17){r.className="pill h";r.textContent="hohe Verwundbarkeit";}else if(s>=11){r.className="pill m";r.textContent="mittlere Verwundbarkeit";}else{r.className="pill g";r.textContent="geringe Verwundbarkeit";}}
+buildVuln();
+
+/* ---------- Etappe 7: Incoterms ---------- */
+var stations=["Werk des Verkäufers","Übergabe an Frachtführer","Längsseits Schiff (Exporthafen)","An Bord (Exporthafen)","Zielhafen / Zielort erreicht","Benannter Ort, Fahrzeug nicht entladen","Am Bestimmungsort entladen"];
+var stShort=["Werk","Frachtführer","Längsseits","An Bord","Hauptlauf bezahlt bis","Bestimmungsort","Entladen"];
+// risk: Index der Station, ab der der Käufer das Risiko trägt; cost: bis zu welcher Station (inkl.) zahlt der Verkäufer den Transport
+var inco=[
+ {k:"EXW",n:"Ex Works – ab Werk",r:0,c:0,sea:0,t:"Der Verkäufer stellt die Ware nur im eigenen Werk bereit. Der Käufer organisiert und bezahlt alles: Verladen, Exportzoll, Transport, Versicherung, Import."},
+ {k:"FCA",n:"Free Carrier – frei Frachtführer",r:1,c:1,sea:0,t:"Der Verkäufer übergibt die Ware (exportfertig verzollt) an den Frachtführer, den der Käufer bestimmt. Ab da trägt der Käufer Risiko und Kosten."},
+ {k:"FAS",n:"Free Alongside Ship – frei Längsseite Schiff",r:2,c:2,sea:1,t:"Nur für See- und Binnenschifffahrt. Der Verkäufer bringt die Ware bis neben das Schiff im Exporthafen."},
+ {k:"FOB",n:"Free On Board – frei an Bord",r:3,c:3,sea:1,t:"Nur Seefracht. Mit dem Verladen an Bord geht das Risiko über. Die Seefracht zahlt der Käufer."},
+ {k:"CFR",n:"Cost and Freight – Kosten und Fracht",r:3,c:4,sea:1,t:"Nur Seefracht. Der Verkäufer zahlt die Fracht bis zum Zielhafen – das Risiko geht aber schon an Bord im Exporthafen über! Risiko- und Kostenübergang fallen auseinander."},
+ {k:"CIF",n:"Cost, Insurance and Freight – Kosten, Versicherung, Fracht",r:3,c:4,sea:1,t:"Wie CFR, zusätzlich schließt der Verkäufer eine Transportversicherung ab. Das Risiko trägt trotzdem ab Bord der Käufer."},
+ {k:"CPT",n:"Carriage Paid To – frachtfrei",r:1,c:4,sea:0,t:"Der Verkäufer zahlt den Transport bis zum Bestimmungsort. Das Risiko geht schon bei der Übergabe an den ersten Frachtführer über."},
+ {k:"CIP",n:"Carriage and Insurance Paid To – frachtfrei versichert",r:1,c:4,sea:0,t:"Wie CPT, zusätzlich mit Versicherung durch den Verkäufer. Beispiel der Weltbank: „CIP Nairobi“ – Verkäufer zahlt Transport und Versicherung bis Nairobi, das Risiko liegt ab Übergabe an den Frachtführer beim Käufer."},
+ {k:"DAP",n:"Delivered At Place – geliefert benannter Ort",r:5,c:5,sea:0,t:"Der Verkäufer liefert bis zum benannten Ort, die Ware steht entladebereit auf dem Fahrzeug. Entladen und Einfuhrverzollung übernimmt der Käufer."},
+ {k:"DPU",n:"Delivered at Place Unloaded – geliefert benannter Ort entladen",r:6,c:6,sea:0,dpuNoDuty:1,t:"Wie DAP, aber der Verkäufer entlädt die Ware auch. Die Einfuhrverzollung bleibt beim Käufer."},
+ {k:"DDP",n:"Delivered Duty Paid – geliefert verzollt",r:6,c:6,sea:0,t:"Maximale Pflichten für den Verkäufer: Lieferung bis zum Käufer inklusive Einfuhrzoll und Steuern. Der Käufer muss fast nichts tun."}
+];
+var curInco=3;
+function buildInco(){
+  var bx=$("#incoBtns");bx.innerHTML="";
+  inco.forEach(function(c,i){var b=el("button",{"aria-pressed":String(i===curInco),title:c.n},c.k);b.addEventListener("click",function(){curInco=i;$$("button",bx).forEach(function(x){x.setAttribute("aria-pressed","false");});b.setAttribute("aria-pressed","true");drawInco();});bx.appendChild(b);});
+  bx.appendChild(el("div",{class:"grp"},"FAS, FOB, CFR, CIF: nur See- und Binnenschiffstransport · alle anderen: jede Transportart"));
+  drawInco();
+}
+function drawInco(){
+  var c=inco[curInco],rt=$("#route");rt.innerHTML="";
+  stations.forEach(function(s,i){var cls="stn "+(i<c.r?"s":"b");if(i===c.r)cls+=" riskpt";
+    var d=el("div",{class:cls},'<span class="flag">Risiko geht über</span><b>'+stShort[i]+"</b>"+s+(i<=c.c&&i>0?'<br><span class="small" style="color:var(--petrol)">Kosten: Verkäufer</span>':(i>0?'<br><span class="small" style="color:var(--warn)">Kosten: Käufer</span>':'')));
+    rt.appendChild(d);});
+  var diff=c.c>c.r;
+  $("#incoInfo").innerHTML="<h3>"+c.k+" · "+c.n+"</h3><p>"+c.t+"</p>"+(diff?'<p class="merke small"><b>Achtung:</b> Hier zahlt der Verkäufer den Transport weiter, als er das Risiko trägt. Geht die Ware auf See verloren, ist das Problem des Käufers.</p>':"")+'<p class="small"><b>Exportverzollung:</b> '+(c.k==="EXW"?"Käufer":"Verkäufer")+' · <b>Einfuhrverzollung und Einfuhrabgaben:</b> '+(c.k==="DDP"?"Verkäufer":"Käufer")+'</p>'+(c.sea?'<p class="small muted">Nur für See- oder Binnenschiffstransport.</p>':"");
+}
+buildInco();
+
+/* ---------- Etappe 8: Skills ---------- */
+var skills=[["Analytisch denken","Ich frage oft „Warum?“ und mag es, Daten auszuwerten."],["Verantwortung übernehmen","Ich kümmere mich selbst darum, dass Dinge klappen, statt zu warten."],["Überzeugend kommunizieren","Ich kann Argumente klar vortragen – und höre auch gut zu."],["Das große Ganze sehen","Ich überlege, was alles nötig ist, damit ein Plan wirklich funktioniert."],["Kreativ sein","Mir fallen ungewöhnliche Lösungen ein, wenn etwas nicht klappt."]];
+var sv=LS.get("skills",[3,3,3,3,3]);
+function buildSkills(){var b=$("#skillRows");b.innerHTML="";
+  skills.forEach(function(s,i){var l=el("label",{for:"sk"+i},"<b>"+s[0]+"</b><br><span class='small muted'>"+s[1]+"</span>");var r=el("input",{type:"range",min:"1",max:"5",step:"1",id:"sk"+i,value:String(sv[i])});var o=el("output",{},String(sv[i]));
+    r.addEventListener("input",function(){sv[i]=+r.value;o.textContent=r.value;LS.set("skills",sv);skillFb();});b.appendChild(l);b.appendChild(r);b.appendChild(o);});skillFb();}
+function skillFb(){var s=sv.reduce(function(a,b){return a+b;},0);var top=skills[sv.indexOf(Math.max.apply(null,sv))][0];
+  $("#skillFb").innerHTML=(s>=20?"Du bringst viele Stärken für das SCM mit.":s>=14?"Gute Basis – vieles davon lernt man im Studium und in der Praxis dazu.":"Kein Problem: Diese Fähigkeiten kann man trainieren, z. B. in Projekten.")+" Deine stärkste Seite: <b>"+top+"</b>.";}
+buildSkills();
+
+/* ---------- Etappe 9: Aufgaben ---------- */
+var tasks=[
+ {l:"⭐",t:"Begriff klären",q:"Erkläre in eigenen Worten, was Supply Chain Management ist. Nenne die drei Flüsse in einer Lieferkette mit je einem Beispiel.",h:"Satzanfang: „SCM koordiniert alle Tätigkeiten, die nötig sind, um …“ – Schau dir das Schaubild in Etappe 01 an.",s:"SCM koordiniert alle Tätigkeiten vom Rohstoff bis zur Auslieferung an den Endkunden und kümmert sich am Ende auch um Recycling oder Entsorgung. Warenfluss: Schuhe werden vom Lager zum Kunden transportiert. Informationsfluss: Bestellung, Sendungsnummer, Lagerbestand. Finanzfluss: Rechnung und Zahlung."},
+ {l:"⭐",t:"Kernfunktionen",q:"Nenne die drei Kernfunktionen des SCM und je zwei typische Aufgaben. Ergänze die drei Unterstützungsfunktionen.",h:"Die Sortierübung in Etappe 03 hat sechs Fächer – drei davon sind Kernfunktionen.",s:"Beschaffung: Lieferanten auswählen, verhandeln. Produktion: Qualität sichern, Nachfrage prognostizieren. Logistik: Transportmittel wählen, Lager/Kühlkette organisieren. Unterstützung: IT, Personal, Recht."},
+ {l:"⭐",t:"Logistik ist überall",q:"Wähle drei Abteilungen aus Etappe 04 und beschreibe jeweils eine logistische Aufgabe. Erkläre, warum man Logistik als Querschnittsfunktion bezeichnet.",h:"Querschnitt = quer durch alle Abteilungen hindurch. Wo gibt es Schnittstellen?",s:"z. B. Einkauf: Liefertermine planen; Marketing: Aktionen melden, damit genug Ware da ist; Kundenservice: Retouren abwickeln. Logistik verbindet Waren- und Informationsflüsse über alle Abteilungsgrenzen hinweg – darum Querschnittsfunktion."},
+ {l:"⭐⭐",t:"Das schwächste Glied",q:"Erkläre am Schulneubau aus Etappe 02, warum eine Lieferkette nur so stark ist wie ihr schwächstes Glied. Verwende die Begriffe Stufe (Tier) und Ripple-Effekt.",h:"Was passiert, wenn das Ziegelwerk ausfällt? Wer hat mit wem einen Vertrag?",s:"Der Landkreis hat nur mit dem Generalunternehmer (Stufe 1) einen Vertrag. Fällt z. B. das Ziegelwerk (Stufe 4) aus, kann der Dachbaustoffhandel nicht liefern, der Dachdecker nicht arbeiten, die Bau AG gerät in Verzug und die Schule öffnet später. Die Störung pflanzt sich über die Stufen fort (Ripple-Effekt). Je mehr Stufen, desto schwerer ist die Kette zu überblicken."},
+ {l:"⭐⭐",t:"Peitscheneffekt",q:"Beschreibe mithilfe der Simulation, wie der Peitscheneffekt entsteht. Nenne zwei Folgen für den Hersteller und eine Gegenmaßnahme.",h:"Vergleiche die Schwankung beim Gesundheitszentrum mit der beim Hersteller. Was passiert, wenn du „Grund der Nachfrage teilen“ einschaltest?",s:"Jede Stufe sieht nur die Bestellungen ihres Kunden und reagiert aus Vorsicht über. Dadurch wird eine kleine Nachfrageänderung nach oben hin immer größer. Folgen beim Hersteller: Überstunden/Engpässe, danach volle Lager und Stillstand, hohe Kosten. Gegenmaßnahme: Informationen über die echte Nachfrage teilen (z. B. gemeinsames ERP, Absprachen)."},
+ {l:"⭐⭐",t:"Risiken bewerten",q:"Bewerte die sechs Risiken von Velotec in der Heatmap. Begründe für die zwei höchsten Risiken deine Bewertung und deine Strategie.",h:"Wahrscheinlichkeit: Wie oft passiert so etwas? Auswirkung: Steht dann die Produktion? Leidet der Ruf? Drohen Strafen?",s:"Siehe Musterbewertung in Etappe 06. Typisch hoch: einziger Akkulieferant (Streuen: zweiter Lieferant) und Kinderarbeit in Stufe 4 (Vermeiden/Vermindern: Nachweise, Audits, notfalls Lieferantenwechsel)."},
+ {l:"⭐⭐⭐",t:"Verwundbarkeit analysieren",q:"Bewerte die Akku-Lieferkette mit dem Expertenwerkzeug. Entwickle ein Maßnahmenpaket mit mindestens drei Maßnahmen und zeige, welches Merkmal jede Maßnahme verbessert.",h:"Jedes der fünf Merkmale hat einen Hebel: Stufen verkürzen, zweiten Anbieter suchen, näher einkaufen, Beziehung pflegen, Daten verlangen.",s:"z. B. zweiter Zelllieferant in Europa (Kritikalität ↓, Geografie ↓); feste Partnerschaft mit Informationsaustausch und gemeinsamer Kapazitätsplanung (Beziehung ↓); vertraglich vereinbarte Sendungsverfolgung und Berichte über Stufe 3/4 (Informationen ↓); Sicherheitsbestand. Abwägen: höhere Kosten gegen geringeres Risiko."},
+ {l:"⭐⭐⭐",t:"Incoterms vergleichen",q:"Velotec kauft Akkuzellen in Shanghai. Vergleiche FOB Shanghai und DDP Niederbayern aus Sicht von Velotec (Risiko, Kosten, Aufwand). Gib eine begründete Empfehlung.",h:"Wo steht die rote Fahne bei FOB, wo bei DDP? Wer kümmert sich um Seefracht, Versicherung und Einfuhrzoll?",s:"FOB: Risiko ab Bord in Shanghai bei Velotec; Velotec organisiert und bezahlt Seefracht, Versicherung, Import. Vorteil: Kontrolle über Spediteur und oft günstigere Fracht; Nachteil: hoher Aufwand und Risiko auf See. DDP: Verkäufer trägt Risiko und Kosten bis Niederbayern inkl. Zoll; bequem, aber meist teurer und weniger Kontrolle. Empfehlung je nach Erfahrung: Mit eigener Logistikabteilung FOB, sonst DDP."},
+ {l:"⭐⭐⭐",t:"Transfer: Prozess modellieren",q:"Zeichne eine EPK „Lieferengpass erkannt“: Der Einkauf prüft, ob ein Ersatzlieferant verfügbar ist (XOR). Ja: Ersatzbestellung auslösen. Nein: Kunden über neuen Liefertermin informieren. Ordne Organisationseinheiten zu.",h:"Start- und Endereignis nicht vergessen. Ereignis und Funktion wechseln sich ab. Die Verzweigung braucht einen XOR-Konnektor, die Zusammenführung auch.",s:"Ereignis „Lieferengpass ist erkannt“ → Funktion „Ersatzlieferanten prüfen“ (Einkauf) → XOR → Ereignis „Ersatzlieferant verfügbar“ → Funktion „Ersatzbestellung auslösen“ (Einkauf) → Ereignis „Ersatzbestellung ist versendet“ | Ereignis „Kein Ersatzlieferant verfügbar“ → Funktion „Kunden über neuen Termin informieren“ (Vertrieb) → Ereignis „Kunde ist informiert“ → XOR-Zusammenführung → Endereignis „Engpass ist bearbeitet“."}
+];
+function buildTasks(){var b=$("#tasks");b.innerHTML="";
+  tasks.forEach(function(t,i){var d=el("div",{class:"task stack"});
+    d.innerHTML='<h4><span class="lvl">'+t.l+'</span>Aufgabe '+(i+1)+': '+t.t+'</h4><p>'+t.q+'</p>';
+    var ta=el("textarea",{"data-store":"task"+i,"aria-label":"Antwort Aufgabe "+(i+1),placeholder:"Deine Antwort …"});d.appendChild(ta);bindStore(ta);
+    var h=el("details",{class:"help"},"<summary>Hilfekarte</summary><p>"+t.h+"</p>");d.appendChild(h);
+    var s=el("details",{class:"help sol"},"<summary>Lösung vergleichen</summary><p>"+t.s+"</p>");
+    s.addEventListener("toggle",function(){if(s.open&&!ta.value.trim()){s.open=false;ta.focus();ta.placeholder="Schreib zuerst deine eigene Antwort – dann kannst du vergleichen.";}});
+    d.appendChild(s);b.appendChild(d);});
+}
+buildTasks();
+
+/* ---------- Quiz ---------- */
+var quiz=[
+ ["Was gehört NICHT zu den drei Kernfunktionen des SCM laut Weltbank?",["Beschaffung","Produktion","Logistik","Marketing"],3,"Die Kernfunktionen sind Beschaffung, Produktion (Operations) und Logistik. IT, Personal und Recht unterstützen."],
+ ["Ein Lieferant der 2. Stufe (Tier 2) …",["hat einen Vertrag direkt mit dem Endkunden.","beliefert den Lieferanten, der den Vertrag mit dem Kunden hat.","ist immer ein Rohstofflieferant.","gehört nicht zur Lieferkette."],1,"Tier 1 hat den Vertrag mit dem Auftraggeber, Tier 2 beliefert Tier 1."],
+ ["Welcher Fluss läuft in der Lieferkette vor allem vom Kunden zum Lieferanten?",["Warenfluss","Finanzfluss","Rückfluss von Daten nur","Keiner"],1,"Das Geld fließt vom Kunden zu den Lieferanten – entgegen dem Warenfluss."],
+ ["Warum sind Lieferketten heute länger und komplexer als früher?",["Unternehmen machen alles selbst.","Spezialisierung, Outsourcing und Globalisierung.","Es gibt weniger Lieferanten.","Transporte sind kostenlos geworden."],1,"Jedes Unternehmen konzentriert sich auf seine Kernkompetenz und kauft den Rest weltweit zu."],
+ ["Nach dem Tsunami 2011 fehlte ein Lackpigment. Welche Lehre zogen die Autohersteller?",["Mehr Werbung","Dual Sourcing: zwei Lieferanten","Weniger Farben anbieten","Alle Lager auflösen"],1,"Ein einziger Lieferant (Single Sourcing) war die Schwachstelle."],
+ ["Was beschreibt der Peitscheneffekt?",["Lkw fahren zu schnell.","Kleine Nachfrageschwankungen werden zum Hersteller hin immer größer.","Preise sinken entlang der Kette.","Kunden bestellen weniger."],1,"Jede Stufe reagiert über, weil sie den Grund der Nachfrageänderung nicht kennt."],
+ ["Ein Risiko ist sehr wahrscheinlich, hat aber kaum Auswirkungen. Welche Strategie passt meist?",["Vermeiden","Akzeptieren","Lieferkette komplett umbauen","Versicherung über Millionen"],1,"Bei geringer Auswirkung ist Vorbeugung oft teurer als der Schaden."],
+ ["Bei CIF trägt der Verkäufer die Fracht bis zum Zielhafen. Wo geht das Risiko über?",["Am Zielhafen","An Bord im Exporthafen","Im Werk des Käufers","Nie"],1,"Bei CFR und CIF fallen Kosten- und Risikoübergang auseinander."],
+ ["Warum ist Logistik eine Querschnittsfunktion?",["Sie arbeitet nur im Lager.","Sie verbindet Waren- und Informationsflüsse über alle Abteilungen hinweg.","Sie ist der Geschäftsleitung unterstellt.","Sie wird ausgelagert."],1,"Vom Einkauf über Produktion und Marketing bis zum Kundenservice – überall gibt es logistische Aufgaben."],
+ ["Wie ist das im Video gezeigte duale Studium organisiert?",["Nur Hochschule","3 Tage Praxispartner, 2 Tage Hochschule","1 Tag Praxis, 4 Tage Hochschule","Nur Onlinekurse"],1,"So steht es in der Videobeschreibung der IU."]
+];
+var qa=LS.get("quiz",{});
+function buildQuiz(){var b=$("#quiz");b.innerHTML="";
+  quiz.forEach(function(q,i){var d=el("div",{class:"qq mc"});d.innerHTML='<p class="q">'+(i+1)+". "+q[0]+"</p>";var o=el("div",{class:"opts"});var fb=el("p",{class:"fb","aria-live":"polite"});
+    q[1].forEach(function(t,j){var bt=el("button",{},t);if(qa[i]!==undefined){if(j===q[2])bt.classList.add("right");else if(j===qa[i])bt.classList.add("wrong");}
+      bt.addEventListener("click",function(){if(qa[i]!==undefined)return;qa[i]=j;LS.set("quiz",qa);buildQuiz();});o.appendChild(bt);});
+    if(qa[i]!==undefined)fb.innerHTML=(qa[i]===q[2]?"<b style='color:var(--ok)'>Richtig.</b> ":"<b style='color:var(--risk)'>Leider falsch.</b> ")+q[3];
+    d.appendChild(o);d.appendChild(fb);b.appendChild(d);});
+  var sc=0;Object.keys(qa).forEach(function(k){if(qa[k]===quiz[k][2])sc++;});$("#quizScore").textContent=sc+" / "+quiz.length;
+}
+$("#quizReset").addEventListener("click",function(){qa={};LS.set("quiz",qa);buildQuiz();});
+buildQuiz();
+
+/* ---------- Alles zurücksetzen (eigener Bestätigungsschritt, kein confirm()) ---------- */
+var rb=$("#resetAll"),armed=false;
+rb.addEventListener("click",function(){
+  if(!armed){armed=true;rb.textContent="Wirklich alles löschen? Zum Bestätigen erneut klicken";setTimeout(function(){armed=false;rb.textContent="Gesamten Fortschritt und alle Notizen löschen";},4000);return;}
+  try{Object.keys(localStorage).forEach(function(k){if(k.indexOf("scm10_")===0)localStorage.removeItem(k);});}catch(e){}
+  location.reload();
+});
+})();
+</script>
+
+<div id="printArea" aria-hidden="true"></div>
+
+<script>
+/* ---------- Gruppenarbeit: Klassenliste, Einteilung, Speichern, Export ---------- */
+(function(){
+"use strict";
+var P="scm10grp_";
+var store={
+  get:function(k,d){try{var v=localStorage.getItem(P+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},
+  set:function(k,v){try{localStorage.setItem(P+k,JSON.stringify(v));return true;}catch(e){return false;}},
+  del:function(k){try{localStorage.removeItem(P+k);}catch(e){}}
+};
+function $(s){return document.querySelector(s);}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];});}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var r=new Uint32Array(1);(window.crypto||{getRandomValues:function(x){x[0]=Math.floor(Math.random()*4294967295);return x;}}).getRandomValues(r);var j=r[0]%(i+1);var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function today(){var d=new Date();return d.toLocaleDateString("de-DE")+" "+d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});}
+
+var TOPICS=[
+  "Lieferstufen & Ripple-Effekt (Etappe 02)",
+  "Aufgaben im SCM & Logistik im Unternehmen (Etappe 03/04)",
+  "Fallbeispiele: Wenn ein Glied reißt (Etappe 05)",
+  "Peitscheneffekt-Simulation (Etappe 05)",
+  "Risikomanagement & Heatmap (Etappe 06)",
+  "Incoterms (Etappe 07)",
+  "Logistik studieren (Etappe 08)"
+];
+var ROLES=["Gesprächsleitung","Zeitwächter/in","Protokoll","Präsentation","Material","Fragen & Kontrolle"];
+var GNAMES=["Container","Palette","Frachter","Gabelstapler","Hochregal","Kühlkette","Sendung","Güterzug","Lastenrad","Hafenkran","Drohne","Paketzentrum","Sattelzug"];
+
+/* Zustand: rows = [[Spalte1,Spalte2,...]] aus der Datei; Namen werden je nach Spaltenmodus gebildet */
+var cls=store.get("class",null);        // {rows:[...], header:bool, mode:"nv"|"vn"|"one"|"hdr", hdr:{v:i,n:i}, absent:{idx:1}}
+var cur=store.get("current",null);      // {date, settings, groups:[{name,topic,members:[{n,role}]}]}
+var saved=store.get("saved",[]);
+
+/* ----- Einlesen ----- */
+function decode(buf){
+  try{return new TextDecoder("utf-8",{fatal:true}).decode(buf);}
+  catch(e){try{return new TextDecoder("windows-1252").decode(buf);}catch(e2){return new TextDecoder().decode(buf);}}
+}
+function splitLine(line,del){
+  var out=[],cell="",q=false;
+  for(var i=0;i<line.length;i++){var ch=line[i];
+    if(q){if(ch==='"'){if(line[i+1]==='"'){cell+='"';i++;}else q=false;}else cell+=ch;}
+    else if(ch==='"')q=true; else if(ch===del){out.push(cell);cell="";} else cell+=ch;}
+  out.push(cell);return out.map(function(c){return c.trim();});
+}
+function parseCSV(txt){
+  txt=txt.replace(/^﻿/,"");
+  var lines=txt.split(/\r\n|\n|\r/).filter(function(l){return l.trim()!=="";});
+  if(!lines.length)return null;
+  var first=lines[0],del=";",best=-1;
+  [";",",","\t"].forEach(function(d){var c=first.split(d).length;if(c>best){best=c;del=d;}});
+  if(best===1)del="\u0000";
+  var rows=lines.map(function(l){return del==="\u0000"?[l.trim()]:splitLine(l,del);});
+  var h=rows[0].map(function(c){return c.toLowerCase();});
+  var vi=-1,ni=-1,ai=-1;
+  h.forEach(function(c,i){
+    if(/^(vorname|rufname|first ?name)$/.test(c))vi=i;
+    else if(/^(nachname|familienname|last ?name|surname)$/.test(c))ni=i;
+    else if(/^(name|schüler|schueler|schülerin|schüler\/in|schülername)$/.test(c))ai=i;
+  });
+  var header=(vi>-1||ni>-1||ai>-1);
+  var res={rows:header?rows.slice(1):rows,header:header,absent:{}};
+  if(header){res.mode="hdr";res.hdr={v:vi,n:ni,a:ai};}
+  else res.mode=rows[0].length>=2?"nv":"one";
+  res.rows=res.rows.filter(function(r){return r.some(function(c){return c!=="";});});
+  return res;
+}
+function fullName(r){
+  var c=cls;
+  if(c.mode==="hdr"){var v=c.hdr.v>-1?r[c.hdr.v]||"":"",n=c.hdr.n>-1?r[c.hdr.n]||"":"";
+    if(v||n)return {v:v,n:n};
+    var a=c.hdr.a>-1?r[c.hdr.a]||"":r[0]||"";return splitFull(a);}
+  if(c.mode==="nv")return {v:r[1]||"",n:r[0]||""};
+  if(c.mode==="vn")return {v:r[0]||"",n:r[1]||""};
+  return splitFull(r[0]||"");
+}
+function splitFull(a){a=a.trim();if(a.indexOf(",")>-1){var p=a.split(",");return {n:p[0].trim(),v:p.slice(1).join(",").trim()};}
+  var parts=a.split(/\s+/);if(parts.length<2)return {v:a,n:""};return {v:parts.slice(0,-1).join(" "),n:parts[parts.length-1]};}
+function display(nm,fmt){
+  if(fmt==="first")return nm.v||nm.n;
+  if(fmt==="init")return (nm.v||"")+(nm.n?" "+nm.n.charAt(0)+".":"");
+  return ((nm.v||"")+" "+(nm.n||"")).trim();
+}
+function people(){if(!cls)return [];return cls.rows.map(function(r,i){return {i:i,nm:fullName(r)};}).filter(function(p){return (p.nm.v+p.nm.n).trim()!=="";});}
+
+function loadText(txt,source){
+  var c=parseCSV(txt);
+  if(!c||!c.rows.length){$("#loadStatus").textContent="In der Datei wurden keine Namen gefunden. Prüfe, ob pro Zeile ein Name steht.";return;}
+  cls=c;cur=null;store.del("current");
+  if(!store.set("class",cls))$("#loadStatus").textContent="Hinweis: Dieser Browser erlaubt kein Speichern – die Liste geht beim Schließen verloren.";
+  renderClass();renderGroups();
+  $("#loadStatus").innerHTML="<b>"+people().length+" Namen</b> aus "+esc(source)+" geladen"+(cls.header?" (Kopfzeile erkannt).":". Prüfe unten, ob Vor- und Nachname richtig erkannt wurden.");
+}
+function readFile(f){
+  if(!f)return;
+  if(f.size>2e6){$("#loadStatus").textContent="Die Datei ist zu groß für eine Klassenliste.";return;}
+  var rd=new FileReader();
+  rd.onload=function(){loadText(decode(rd.result),f.name);};
+  rd.onerror=function(){$("#loadStatus").textContent="Die Datei konnte nicht gelesen werden.";};
+  rd.readAsArrayBuffer(f);
+}
+$("#csvFile").addEventListener("change",function(e){readFile(e.target.files[0]);e.target.value="";});
+var drop=$("#drop");
+["dragenter","dragover"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("over");});});
+["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("over");});});
+drop.addEventListener("drop",function(e){if(e.dataTransfer&&e.dataTransfer.files.length)readFile(e.dataTransfer.files[0]);});
+$("#pasteBtn").addEventListener("click",function(){var t=$("#namePaste").value;if(t.trim()){loadText(t,"der Eingabe");$("#namePaste").value="";}});
+$("#colMode").addEventListener("change",function(){if(!cls)return;cls.mode=this.value;store.set("class",cls);renderClass();});
+
+/* ----- Anwesenheit ----- */
+function renderClass(){
+  var box=$("#classBox");if(!cls){box.hidden=true;$("#colForm").hidden=true;return;}
+  box.hidden=false;
+  $("#colForm").hidden=cls.mode==="hdr";
+  if(cls.mode!=="hdr")$("#colMode").value=cls.mode;
+  var fmt=$("#gFormat").value,list=$("#nameList");list.innerHTML="";
+  var ps=people(),present=0;
+  ps.forEach(function(p){var ab=!!cls.absent[p.i];if(!ab)present++;
+    var l=document.createElement("label");l.className=ab?"absent":"";
+    var cb=document.createElement("input");cb.type="checkbox";cb.checked=!ab;cb.setAttribute("aria-label",display(p.nm,"full")+" anwesend");
+    cb.addEventListener("change",function(){if(cb.checked)delete cls.absent[p.i];else cls.absent[p.i]=1;store.set("class",cls);renderClass();});
+    l.appendChild(cb);l.appendChild(document.createTextNode(display(p.nm,fmt)));list.appendChild(l);});
+  $("#presentCount").textContent=present+" von "+ps.length+" anwesend";
+}
+
+/* ----- Einteilung ----- */
+function settings(){return {mode:$("#gMode").value,num:Math.max(1,parseInt($("#gNum").value,10)||4),topics:$("#gTopics").value,roles:$("#gRoles").value,fmt:$("#gFormat").value};}
+$("#gMode").addEventListener("change",function(){$("#gNumLabel").textContent=this.value==="size"?"Personen je Gruppe":"Anzahl der Gruppen";$("#gNum").min=this.value==="size"?"2":"1";});
+$("#gFormat").addEventListener("change",function(){renderClass();if(cur){cur.settings.fmt=this.value;store.set("current",cur);renderGroups();}});
+
+function makeGroups(){
+  if(!cls){$("#loadStatus").textContent="Bitte zuerst eine Klassenliste laden.";drop.focus();return;}
+  var st=settings();
+  var pres=people().filter(function(p){return !cls.absent[p.i];});
+  var n=pres.length;if(n<2){$("#groupStatus").textContent="Es sind zu wenige Personen anwesend.";$("#groupBox").hidden=false;return;}
+  var g=st.mode==="size"?Math.max(1,Math.round(n/st.num)):Math.min(st.num,n);
+  if(st.mode==="size"&&st.num<2)g=Math.floor(n/2);
+  var mix=shuffle(pres),groups=[],names=shuffle(GNAMES);
+  var topicOrder=TOPICS;
+  for(var k=0;k<g;k++)groups.push({name:names[k%names.length]+(k>=names.length?" "+(Math.floor(k/names.length)+1):""),topic:st.topics==="puzzle"?topicOrder[k%topicOrder.length]:"",members:[]});
+  mix.forEach(function(p,i){groups[i%g].members.push({nm:p.nm});});
+  if(st.roles==="yes")groups.forEach(function(gr){var rs=shuffle(ROLES);gr.members.forEach(function(m,i){m.role=i<rs.length?rs[i]:"";});});
+  cur={date:today(),settings:st,groups:groups};
+  store.set("current",cur);
+  $("#saveName").value="Gruppen "+cur.date.split(" ")[0];
+  renderGroups();$("#groupStatus").textContent="";
+  $("#groupBox").scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("#makeGroups").addEventListener("click",makeGroups);
+$("#reshuffle").addEventListener("click",makeGroups);
+
+function groupsHTML(c){
+  var fmt=c.settings.fmt||"full";
+  return '<div class="groups">'+c.groups.map(function(gr,i){
+    return '<div class="gcard"><h4>Gruppe '+(i+1)+' · '+esc(gr.name)+'<span>'+gr.members.length+' Pers.</span></h4>'+
+      (gr.topic?'<div class="topic"><b>Expertenthema:</b> '+esc(gr.topic)+'</div>':'')+
+      '<ol>'+gr.members.map(function(m){return "<li>"+esc(display(m.nm,fmt))+(m.role?' <small>· '+esc(m.role)+'</small>':'')+"</li>";}).join("")+'</ol></div>';
+  }).join("")+'</div>';
+}
+function renderGroups(){
+  var box=$("#groupBox");
+  if(!cur){box.hidden=true;$("#reshuffle").hidden=true;return;}
+  box.hidden=false;$("#reshuffle").hidden=false;
+  $("#groupOut").innerHTML=groupsHTML(cur).replace(/^<div class="groups">|<\/div>$/g,"");
+  var total=cur.groups.reduce(function(a,g){return a+g.members.length;},0);
+  $("#groupMeta").textContent=cur.groups.length+" Gruppen · "+total+" Personen · "+cur.date;
+  if(!$("#saveName").value)$("#saveName").value="Gruppen "+cur.date.split(" ")[0];
+}
+
+/* ----- Speichern ----- */
+function renderSaved(){
+  var box=$("#savedBox"),ul=$("#savedList");
+  if(!saved.length){box.hidden=true;return;}
+  box.hidden=false;ul.innerHTML="";
+  saved.forEach(function(s,i){
+    var li=document.createElement("li");
+    li.innerHTML="<b>"+esc(s.title)+"</b><span class='small muted'>"+s.groups.length+" Gruppen · "+esc(s.date)+"</span>";
+    var lb=document.createElement("button");lb.className="btn sm";lb.textContent="Anzeigen";
+    lb.addEventListener("click",function(){cur=JSON.parse(JSON.stringify(s));store.set("current",cur);$("#saveName").value=s.title;$("#gFormat").value=cur.settings.fmt||"full";renderGroups();$("#groupStatus").textContent="Gespeicherte Einteilung „"+s.title+"“ geladen.";$("#groupBox").scrollIntoView({behavior:"smooth"});});
+    var db=document.createElement("button");db.className="btn sm warn";db.textContent="Löschen";var armed=false;
+    db.addEventListener("click",function(){if(!armed){armed=true;db.textContent="Sicher? Nochmals klicken";setTimeout(function(){armed=false;db.textContent="Löschen";},3000);return;}saved.splice(i,1);store.set("saved",saved);renderSaved();});
+    li.appendChild(lb);li.appendChild(db);ul.appendChild(li);
+  });
+}
+$("#saveGroups").addEventListener("click",function(){
+  if(!cur)return;
+  var t=$("#saveName").value.trim()||("Gruppen "+cur.date);
+  var copy=JSON.parse(JSON.stringify(cur));copy.title=t;
+  var ex=-1;saved.forEach(function(s,i){if(s.title===t)ex=i;});
+  if(ex>-1)saved[ex]=copy;else saved.unshift(copy);
+  var ok=store.set("saved",saved);renderSaved();
+  $("#groupStatus").textContent=ok?"Einteilung „"+t+"“ gespeichert (nur in diesem Browser).":"Speichern ist in diesem Browser nicht möglich. Lade die Einteilung als CSV herunter.";
+});
+
+/* ----- Export ----- */
+function title(){return ($("#saveName").value.trim()||"Gruppeneinteilung");}
+function csvText(){
+  var fmt=cur.settings.fmt||"full",out=["Gruppe;Gruppenname;Expertenthema;Name;Rolle"];
+  cur.groups.forEach(function(g,i){g.members.forEach(function(m){out.push([i+1,g.name,g.topic||"",display(m.nm,fmt),m.role||""].map(function(v){v=String(v);return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(";"));});});
+  return "﻿"+out.join("\r\n");
+}
+function printDoc(){
+  return '<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>'+esc(title())+'</title><style>'+
+   'body{font-family:"Segoe UI",Arial,sans-serif;margin:24px;color:#000}h1{margin:0 0 4px;font-size:22px}.m{font-size:13px;margin-bottom:14px;color:#333}'+
+   '.groups{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.gcard{border:1.5px solid #000;border-radius:6px;break-inside:avoid;page-break-inside:avoid}'+
+   '.gcard h4{margin:0;padding:6px 10px;border-bottom:1.5px solid #000;font-size:15px;display:flex;justify-content:space-between}.gcard h4 span{font-weight:400;font-size:12px}'+
+   '.topic{padding:5px 10px;font-size:12px;border-bottom:1px solid #999}ol{margin:0;padding:6px 10px 8px 28px;font-size:14px}small{color:#444}'+
+   'button{margin-bottom:14px;font-size:15px;padding:6px 14px}@media print{button{display:none}}</style></head><body>'+
+   '<button onclick="window.print()">Drucken</button><h1>'+esc(title())+'</h1><div class="m">Wirtschaftsinformatik 10 · Supply Chain Management · '+esc(cur.date)+' · '+cur.groups.length+' Gruppen</div>'+
+   groupsHTML(cur)+'</body></html>';
+}
+var dlNs=null;
+if(window.claude&&typeof window.claude.use==="function"){try{window.claude.use("downloads").then(function(ns){dlNs=ns;}).catch(function(){});}catch(e){}}
+function saveFile(name,data,mime){
+  var st=$("#groupStatus");
+  if(dlNs){
+    dlNs.save({filename:name,data:data}).then(function(){st.textContent="„"+name+"“ wurde gespeichert.";}).catch(function(err){
+      var c=err&&err.code;st.textContent=c==="declined"?"Download abgebrochen.":"Download ist in dieser Ansicht nicht möglich. Nutze „Für Teams kopieren“ oder öffne die Seite als Datei aus deinem Ordner.";});
+    return;
+  }
+  try{
+    var blob=new Blob([data],{type:mime});var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;
+    document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000);
+    st.textContent="„"+name+"“ wird heruntergeladen.";
+  }catch(e){st.textContent="Download ist in dieser Ansicht nicht möglich. Nutze „Für Teams kopieren“.";}
+}
+function fname(ext){return title().replace(/[\\\/:*?"<>|]+/g,"-").replace(/\s+/g,"_")+"."+ext;}
+$("#dlCsv").addEventListener("click",function(){if(cur)saveFile(fname("csv"),csvText(),"text/csv;charset=utf-8");});
+$("#dlPrint").addEventListener("click",function(){if(cur)saveFile(fname("html"),printDoc(),"text/html;charset=utf-8");});
+$("#printGroups").addEventListener("click",function(){
+  if(!cur)return;
+  var pa=$("#printArea");
+  pa.innerHTML="<h1>"+esc(title())+"</h1><div class='pmeta'>Wirtschaftsinformatik 10 · Supply Chain Management · "+esc(cur.date)+" · "+cur.groups.length+" Gruppen</div>"+groupsHTML(cur);
+  try{window.print();$("#groupStatus").textContent="Druckdialog geöffnet. Falls nichts passiert, lade die Druckversion herunter.";}
+  catch(e){$("#groupStatus").textContent="Drucken ist in dieser Ansicht gesperrt. Lade die Druckversion herunter und drucke sie von dort.";}
+});
+$("#copyGroups").addEventListener("click",function(){
+  if(!cur)return;var fmt=cur.settings.fmt||"full";
+  var t=title()+"\n"+cur.groups.map(function(g,i){return "\nGruppe "+(i+1)+" – "+g.name+(g.topic?"\nThema: "+g.topic:"")+"\n"+g.members.map(function(m){return "• "+display(m.nm,fmt)+(m.role?" ("+m.role+")":"");}).join("\n");}).join("\n");
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){$("#groupStatus").textContent="Einteilung kopiert – du kannst sie jetzt in Teams einfügen.";},function(){$("#groupStatus").textContent="Kopieren wurde vom Browser blockiert.";});}
+  else $("#groupStatus").textContent="Kopieren wird von diesem Browser nicht unterstützt.";
+});
+$("#tplBtn").addEventListener("click",function(){saveFile("Klassenliste_Vorlage.csv","﻿Nachname;Vorname\r\n","text/csv;charset=utf-8");$("#loadStatus").textContent="Vorlage: In Excel Namen eintragen und als „CSV UTF-8 (Trennzeichen-getrennt)“ speichern.";});
+
+/* ----- Alles löschen ----- */
+var wb=$("#wipeClass"),wArmed=false;
+wb.addEventListener("click",function(){
+  if(!wArmed){wArmed=true;wb.textContent="Wirklich alle Namen und Einteilungen löschen? Nochmals klicken";setTimeout(function(){wArmed=false;wb.textContent="Klassenliste und alle Einteilungen löschen";},4000);return;}
+  ["class","current","saved"].forEach(store.del);cls=null;cur=null;saved=[];
+  renderClass();renderGroups();renderSaved();$("#loadStatus").textContent="Alle Namen und Einteilungen wurden aus diesem Browser gelöscht.";$("#groupStatus").textContent="";
+  wArmed=false;wb.textContent="Klassenliste und alle Einteilungen löschen";
+});
+
+if(cur&&cur.settings&&cur.settings.fmt)$("#gFormat").value=cur.settings.fmt;
+renderClass();renderGroups();renderSaved();
+})();
+</script>
+</body>
+</html>
